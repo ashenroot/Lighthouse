@@ -377,7 +377,7 @@ def cmd_update(args) -> None:
     if pulled.returncode:
         fail("git pull failed (local changes in the checkout?):\n" + pulled.stderr.strip())
     print("Installing dependencies (up to a minute; it prints errors if it fails)...", flush=True)
-    pip = subprocess.run(as_owner + [sys.executable, "-m", "pip", "install", "--quiet", "--disable-pip-version-check", "--timeout", "30", "-e", str(repo / "fresnel")], capture_output=True, text=True)
+    pip = subprocess.run(as_owner + [sys.executable, "-m", "pip", "install", "--quiet", "--disable-pip-version-check", "--timeout", "30", "-e", str(repo / "fresnel")], capture_output=True, text=True, cwd=repo / "fresnel")  # not the caller's cwd: the owner may not be able to read it
     if pip.returncode:
         fail("dependency install failed:\n" + pip.stderr.strip())
     print("Updated.")
