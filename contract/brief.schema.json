@@ -1,0 +1,179 @@
+{
+  "$defs": {
+    "BriefSection": {
+      "additionalProperties": false,
+      "properties": {
+        "panel": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_]{0,31}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Panel"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "maxLength": 300,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        },
+        "number": {
+          "anyOf": [
+            {
+              "maximum": 99,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Number"
+        },
+        "group": {
+          "anyOf": [
+            {
+              "maxLength": 300,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Group"
+        },
+        "criticality": {
+          "anyOf": [
+            {
+              "enum": [
+                "quiet",
+                "notable",
+                "elevated",
+                "critical"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Criticality"
+        },
+        "body": {
+          "maxLength": 20000,
+          "title": "Body",
+          "type": "string"
+        },
+        "sources": {
+          "items": {
+            "maxLength": 2000,
+            "pattern": "^https?://[^\\s]+$",
+            "type": "string"
+          },
+          "maxItems": 100,
+          "title": "Sources",
+          "type": "array"
+        }
+      },
+      "required": [
+        "body"
+      ],
+      "title": "BriefSection",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "The Keeper's Log: a daily brief produced by an outside job.",
+  "properties": {
+    "generated_at": {
+      "format": "date-time",
+      "title": "Generated At",
+      "type": "string"
+    },
+    "model": {
+      "anyOf": [
+        {
+          "maxLength": 300,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Model"
+    },
+    "format": {
+      "default": "markdown",
+      "enum": [
+        "markdown",
+        "text"
+      ],
+      "title": "Format",
+      "type": "string"
+    },
+    "title": {
+      "anyOf": [
+        {
+          "maxLength": 300,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Title"
+    },
+    "body": {
+      "anyOf": [
+        {
+          "maxLength": 60000,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Body"
+    },
+    "source_notes": {
+      "items": {
+        "maxLength": 300,
+        "type": "string"
+      },
+      "maxItems": 50,
+      "title": "Source Notes",
+      "type": "array"
+    },
+    "sections": {
+      "items": {
+        "$ref": "#/$defs/BriefSection"
+      },
+      "maxItems": 30,
+      "title": "Sections",
+      "type": "array"
+    }
+  },
+  "required": [
+    "generated_at"
+  ],
+  "title": "Brief",
+  "type": "object"
+}

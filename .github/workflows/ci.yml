@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  relay:
+    name: Fresnel tests (Python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: fresnel/pyproject.toml
+      - run: pip install -e "fresnel[dev]"
+      - run: python -m pytest -q
+        working-directory: fresnel
+
+  board:
+    name: Board and installer checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Board JavaScript parses
+        run: node --check board/app.js && node --check board/config.js
+      - name: Installer passes shellcheck
+        run: shellcheck install.sh
+      - name: No inline styles or scripts in the board (the relay sends a strict CSP)
+        run: "! grep -nE '<style|style=\"|<script>' board/index.html"

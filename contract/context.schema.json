@@ -1,0 +1,94 @@
+{
+  "$defs": {
+    "ContextItem": {
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "maxLength": 300,
+          "title": "Title",
+          "type": "string"
+        },
+        "summary": {
+          "anyOf": [
+            {
+              "maxLength": 1000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Summary"
+        },
+        "url": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "pattern": "^https?://[^\\s]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Url"
+        },
+        "source": {
+          "anyOf": [
+            {
+              "maxLength": 300,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source"
+        },
+        "published_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Published At"
+        }
+      },
+      "required": [
+        "title"
+      ],
+      "title": "ContextItem",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Curated geopolitics and security headlines, pushed by an outside job.",
+  "properties": {
+    "generated_at": {
+      "format": "date-time",
+      "title": "Generated At",
+      "type": "string"
+    },
+    "items": {
+      "items": {
+        "$ref": "#/$defs/ContextItem"
+      },
+      "maxItems": 50,
+      "title": "Items",
+      "type": "array"
+    }
+  },
+  "required": [
+    "generated_at"
+  ],
+  "title": "ContextSlot",
+  "type": "object"
+}

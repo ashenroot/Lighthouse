@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Fresnel envelope",
+  "type": "object",
+  "required": [
+    "id",
+    "title",
+    "panel",
+    "tier",
+    "status",
+    "summary",
+    "source_url",
+    "fetch",
+    "data"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "panel": {
+      "type": "string"
+    },
+    "tier": {
+      "enum": [
+        "primary",
+        "fragile",
+        "push"
+      ]
+    },
+    "status": {
+      "enum": [
+        "nominal",
+        "active",
+        "unknown",
+        "info"
+      ]
+    },
+    "summary": {
+      "type": "string"
+    },
+    "source_url": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "fetch": {
+      "type": "object",
+      "required": [
+        "ok",
+        "fetched_at",
+        "last_attempt_at",
+        "stale_after",
+        "stale",
+        "error",
+        "consecutive_failures"
+      ],
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "fetched_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "last_attempt_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "stale_after": {
+          "type": "integer"
+        },
+        "stale": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "consecutive_failures": {
+          "type": "integer"
+        }
+      }
+    },
+    "data": {}
+  }
+}

@@ -1,0 +1,99 @@
+# Reference for every Fresnel option and its default. `fresnel init` writes a minimal config.yaml
+# for you; copy settings from here as needed. Run `fresnel check` after editing.
+
+location:
+  name: Kansas City, MO          # shown on the dashboard
+  lat: 39.1                 # decimal degrees; used for NWS alerts
+  lon: -94.6
+  state: MO
+  county_fips: "29095"      # 5 digits: state + county; used for FEMA declarations
+  # Anything Fresnel publishes (links, snapshot) rounds coordinates to 0.1 degree,
+  # so a public relay does not reveal a precise spot.
+
+server:
+  host: 127.0.0.1
+  port: 8787
+  data_dir: ./data          # last-good cache, pushed content and tokens (relative paths are relative to this file)
+  board_dir: ../board       # serve the Lighthouse board at / (remove to run the relay alone)
+  cors_origins: []          # add the dashboard's origin if it is served from elsewhere
+
+http:
+  # NWS requires a User-Agent that identifies you.
+  user_agent: "lighthouse-fresnel (you@example.com)"
+  timeout: 20
+
+# Every source is on by default. Override only what you need.
+# interval and stale_after are seconds (minimum 60). params are per-source thresholds.
+sources:
+  nws_alerts:
+    interval: 300
+    params:
+      active_min_severity: Moderate   # Minor | Moderate | Severe | Extreme
+  swpc_kp:
+    params:
+      active_g: 1                     # panel goes active at G1 (Kp 5) or higher
+  nhc_storms:
+    params:
+      basins: [al]                    # al = Atlantic, ep = E. Pacific, cp = C. Pacific
+  cisa_kev:
+    params:
+      window_days: 7
+      active_days: 1
+  openfema:
+    params:
+      active_days: 30
+  faa_airports:
+    params:
+      airports: [MCI]                 # FAA codes to watch; the source stays off until you list some
+    # proxy: socks5h://127.0.0.1:1080                 # fetch just this source through a proxy (http, https or socks5), if the
+    #                                                  # publisher blocks your server's network (HTTP 403)
+  usgs_gauges:
+    params:
+      # sites: ["02204130"]           # USGS site numbers; empty means the nearest gauges to your location
+      flood_stage_ft: {}              # { "02204130": 8.0 } turns the panel active at or above that height
+  drought:
+    params:
+      active_category: d2             # d0..d4; with active_pct, how much of the county triggers active
+      active_pct: 50
+  cdc_wastewater:
+    params:
+      active_share: 0.5               # share of state sites at High or above that triggers active
+  fda_recalls:
+    params:
+      categories: [food]              # food | drug | device
+  # nws_alerts: { enabled: false }    # turn a source off like this
+
+# Pushed content: outside jobs PUT JSON here. Fresnel never generates it.
+# Push tokens are not configured here. Create them with: fresnel token add <name> --slots brief
+push:
+  brief:
+    stale_after: 93600                # 26 hours
+  context:
+    stale_after: 93600
+
+# Alerts through ntfy when a source turns active, or when the daily brief goes missing.
+# Alerts are on whenever a topic is set. The topic name acts as a password, so keep this file private.
+# foghorn:
+#   topic: your-private-ntfy-topic
+#   url: https://ntfy.sh
+#   priority: high
+
+# Read the daily brief from a mailbox instead of accepting a push. Use this when the job
+# that writes the brief can send email but cannot reach the relay. Fresnel logs in over IMAP
+# and publishes the newest message whose subject matches. Store the password with:
+#   fresnel mailbox set-password
+# Gmail needs 2-step verification, an app password, and IMAP enabled.
+# mailbox:
+#   enabled: true
+#   user: you@gmail.com
+#   folder: "[Gmail]/Sent Mail"      # default INBOX
+#   subject_contains: "Daily Briefing"
+#   # from_addrs: [other@example.com]  # default: only mail from the user itself
+#   # require_auth: true               # for an inbox strangers can write to
+
+# Read the daily brief from a private ntfy topic that the brief job posts to. Make a topic with
+# `fresnel ntfy-topic`; the name is the only secret. Print the job's step with `fresnel brief-step --ntfy`.
+# brief_ntfy:
+#   topic: lighthouse-brief-<random>
+#   url: https://ntfy.sh
+#   # token: tk_...      # for a free ntfy.sh account or a protected topic
