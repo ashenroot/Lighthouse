@@ -37,6 +37,6 @@ The Keeper's Log is a briefing written by something outside Lighthouse, such as 
 
 Details are in [`fresnel/README.md`](fresnel/README.md#push). Number the sections of the brief and rate each one (`QUIET`, `NOTABLE`, `ELEVATED`, `CRITICAL`) and the board shows them as a list you can open one at a time.
 
-## Contributing and license
+## Use it, fork it
 
-See [`CONTRIBUTING.md`](CONTRIBUTING.md) for setup and how to add a data source, and [`SECURITY.md`](SECURITY.md) to report a vulnerability. Released under the [MIT license](LICENSE).
+Lighthouse is published for anyone to run and adapt, under the [MIT license](LICENSE). It is maintained by one person and is not open to outside pull requests or feature requests; fork it and make it yours.
