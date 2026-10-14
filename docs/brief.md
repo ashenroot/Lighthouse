@@ -141,6 +141,7 @@ The rules:
 - **Intro**: text before the first heading is shown above the list. If it only repeats the title, it is hidden.
 - **A `Sources` heading** (not numbered) turns the lines beneath it into a list of links. Any `http` or `https` address on those lines is kept.
 - Text inside a section is shown as plain text. No markdown, HTML or scripts are interpreted.
+- **Readability is automatic.** When a section opens, the board joins hard-wrapped lines, breaks paragraphs longer than about 400 characters at sentence ends, shows lines that start with `-`, `*`, `•` or `1.` as a bulleted list, and bolds a short label at the start of a paragraph (`Bottom line: ...`, `Action: ...`). A prompt that asks for short paragraphs, a `Bottom line:` first, and bullets for lists of items gives the best result.
 
 | Rating | Meaning | Pill colour |
 |---|---|---|

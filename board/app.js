@@ -192,8 +192,59 @@
     return out;
   }
 
+  // Plain-text briefs arrive as long paragraphs. Make them scannable: join hard-wrapped lines,
+  // turn bullet runs into lists, bold a leading "Label:", and break long paragraphs at sentence ends.
+  const ABBR = /(?:\b[A-Za-z]|\bU\.S|\bMr|\bMrs|\bMs|\bDr|\bSt|\bNo|\bvs|\bInc|\bCo|\bCorp|\bGen|\bSen|\bRep|\bGov|\bJan|\bFeb|\bAug|\bSept?|\bOct|\bNov|\bDec)\.$/;
+  const BULLET = /^\s*(?:[-*\u2022\u2013]|\d{1,2}[.)])\s+/;
+  function sentences(p) {
+    const parts = p.split(/(?<=[.!?])\s+(?=[A-Z0-9"\u201c(])/), out = [];
+    for (const part of parts) {
+      if (out.length && ABBR.test(out[out.length - 1])) out[out.length - 1] += " " + part;
+      else out.push(part);
+    }
+    return out;
+  }
+  function chunks(p) {
+    if (p.length <= 420) return [p];
+    const out = []; let cur = "";
+    for (const sent of sentences(p)) {
+      if (cur && (cur + " " + sent).length > 340) { out.push(cur); cur = sent; }
+      else cur = cur ? cur + " " + sent : sent;
+    }
+    if (cur) out.push(cur);
+    return out;
+  }
+  function labelled(p) {
+    const m = /^([A-Z][A-Za-z0-9 \/&'\u2019().-]{1,40}):\s+(\S[\s\S]*)$/.exec(p);
+    if (!m || /https?$/i.test(m[1])) return inline(p);
+    return [h("strong", { class: "lbl" }, m[1] + ": "), ...inline(m[2])];
+  }
+  function readable(text) {
+    const out = [];
+    for (const block of text.split(/\n{2,}/)) {
+      let para = [], list = [];
+      const flushPara = () => {
+        if (!para.length) return;
+        for (const c of chunks(para.join(" ").replace(/\s+/g, " ").trim())) out.push(h("p", {}, labelled(c)));
+        para = [];
+      };
+      const flushList = () => {
+        if (list.length) out.push(h("ul", { class: "pts" }, list.map((l) => h("li", {}, labelled(l)))));
+        list = [];
+      };
+      for (const line of block.split("\n")) {
+        if (!line.trim()) continue;
+        if (BULLET.test(line)) { flushPara(); list.push(line.replace(BULLET, "").trim()); }
+        else if (list.length && /^\s{2,}\S/.test(line)) list[list.length - 1] += " " + line.trim();
+        else { flushList(); para.push(line.trim()); }
+      }
+      flushPara(); flushList();
+    }
+    return out;
+  }
+
   function markdown(text, format) {
-    if (format === "text") return text.split(/\n{2,}/).map((p) => h("p", { class: "pre" }, inline(p)));
+    if (format === "text") return readable(text);
     return text.split(/\n{2,}/).map((block) => {
       const lines = block.split("\n").filter(Boolean);
       if (lines.length && lines.every((l) => /^\s*[-*]\s+/.test(l)))

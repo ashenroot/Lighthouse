@@ -91,6 +91,8 @@ a.row:hover{background:#1b252c}
 .pop::backdrop{background:rgba(0,0,0,.6)}
 .pop-head{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel)}
 .pop-head h2{margin:0;flex:1 1 auto;font-size:15px;color:var(--strong)}
-.pop-body{padding:14px 18px 20px;display:flex;flex-direction:column;gap:10px}
-.pop-body p{margin:0}
+.pop-body{padding:16px 22px 24px;display:flex;flex-direction:column;gap:14px;font-size:14.5px;line-height:1.7}
+.pop-body p{margin:0;max-width:68ch}
+.pop-body .pts{margin:0;padding-left:20px;max-width:68ch;display:flex;flex-direction:column;gap:8px}
+.pop-body .lbl{color:var(--strong)}
 .links{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;overflow-wrap:anywhere}
