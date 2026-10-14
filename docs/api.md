@@ -64,7 +64,7 @@ The latest brief, as a push envelope. `GET /v1/brief/YYYY-MM-DD` returns the arc
 
 ## `GET /v1/push/{slot}`
 
-The latest content for a slot (`brief` or `context`), wrapped in an envelope with `status: info`, when it was received, who sent it, and whether it is stale. An unknown slot is `404`.
+The latest content for a slot (`brief`, or `context` if you enabled it), wrapped in an envelope with `status: info`, when it was received, who sent it, and whether it is stale. An unknown slot is `404`.
 
 ## `PUT /v1/push/{slot}`
 
@@ -82,7 +82,7 @@ Writes a slot. Requires `Authorization: Bearer TOKEN` where the token allows tha
 | `sections` | no | Up to 30. Each: `body` (required, up to 20000), `title`, `number` (1 to 99), `group`, `criticality` (`quiet`, `notable`, `elevated`, `critical`), `panel`, `sources` (up to 100 `http(s)` links). |
 | `source_notes` | no | Up to 50 short strings. |
 
-**`context` fields:** `generated_at` (required) and `items`, up to 50, each with `title` (required), `summary`, `url`, `source`, `published_at`.
+**`context` fields** (only when `push.context` is enabled in the config): `generated_at` (required) and `items`, up to 50, each with `title` (required), `summary`, `url`, `source`, `published_at`.
 
 Control characters are stripped from every string. Content is stored as text and never interpreted as HTML.
 

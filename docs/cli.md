@@ -39,7 +39,7 @@ Creates a config by asking questions. The installer runs it for you.
 Push tokens let an outside job write to a slot. They are stored as hashes; the real value is shown once.
 
 ```
-fresnel token add NAME --slots brief      # slots: brief, context, or * for all
+fresnel token add NAME --slots brief      # slots: brief (or context, if enabled), or * for all
 fresnel token list
 fresnel token revoke NAME
 ```

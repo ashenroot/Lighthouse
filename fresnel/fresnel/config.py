@@ -136,7 +136,9 @@ class BriefNtfy(Strict):
 
 
 def _default_push() -> dict[str, PushSlot]:
-    return {name: PushSlot() for name in SLOT_MODELS}
+    # Only the daily brief is on by default. Other slots (such as "context") are opt-in:
+    # list them under push: in the config and the board shows their panel.
+    return {"brief": PushSlot()}
 
 
 class Config(Strict):
@@ -152,6 +154,7 @@ class Config(Strict):
 
     @model_validator(mode="after")
     def _check(self) -> "Config":
+        self.push.setdefault("brief", PushSlot())
         unknown = set(self.push) - set(SLOT_MODELS)
         if unknown:
             raise ValueError(f"unknown push slots: {sorted(unknown)}; known: {sorted(SLOT_MODELS)}")

@@ -68,8 +68,8 @@ sources:
 push:
   brief:
     stale_after: 93600                # 26 hours
-  context:
-    stale_after: 93600
+  # context:                          # opt-in: a "Context headlines" panel fed by a job you write
+  #   stale_after: 93600
 
 # Alerts through ntfy when a source turns active, or when the daily brief goes missing.
 # Alerts are on whenever a topic is set. The topic name acts as a password, so keep this file private.

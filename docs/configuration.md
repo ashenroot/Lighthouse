@@ -123,8 +123,8 @@ push:
   brief:
     stale_after: 93600
     max_bytes: 200000
-  context:
-    stale_after: 93600
+  # context:                  # optional second slot; see below
+  #   stale_after: 93600
 ```
 
 | Key | Default | Meaning |
@@ -132,7 +132,7 @@ push:
 | `stale_after` | `93600` (26 hours) | Seconds. A daily brief that is older than this shows as out of date, and Foghorn raises "Keeper's Log is missing". |
 | `max_bytes` | `200000` | Largest request body accepted. Larger gets HTTP 413. |
 
-Slots are `brief` and `context`. See [The daily brief](brief.md). Tokens are not set here; create them with `fresnel token add`.
+The `brief` slot is always on. `context` is an optional second slot for a list of headlines pushed by your own job; it is off by default, and uncommenting it adds a "Context headlines" panel to the board (it shows as unknown until a job pushes to it). See [The daily brief](brief.md) and [API](api.md#put-v1pushslot). Tokens are not set here; create them with `fresnel token add`.
 
 ## `foghorn`
 

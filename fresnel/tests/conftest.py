@@ -147,6 +147,7 @@ def config(tmp_path):
     return Config.model_validate({
         "location": {"name": "Kansas City, MO", "lat": 39.1012, "lon": -94.5783, "state": "MO", "county_fips": "29095"},
         "server": {"data_dir": str(tmp_path / "data")},
+        "push": {"brief": {}, "context": {}},
         "sources": {"faa_airports": {"params": {"airports": ["mci"]}},
                     "usgs_gauges": {"params": {"flood_stage_ft": {"02204130": 2.0}}}},
     })
