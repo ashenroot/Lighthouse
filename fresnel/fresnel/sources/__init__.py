@@ -1,6 +1,7 @@
 """Source registry. Add a source: write the class, import it here, list it below."""
 from __future__ import annotations
 
+from .air_quality import AirQuality
 from .aviation_weather import AviationWeather
 from .base import Context, Result, Source
 from .cdc_wastewater import CdcWastewater
@@ -12,6 +13,7 @@ from .faa_airports import FaaAirports
 from .grid_operators import GridOperators
 from .nerc_alerts import NercAlerts
 from .nhc_storms import NhcStorms
+from .nifc_wildfires import NifcWildfires
 from .nws_alerts import NwsAlerts
 from .odin_outages import OdinOutages
 from .openfema import OpenFema
@@ -26,7 +28,7 @@ REGISTRY: dict[str, type[Source]] = {
     cls.id: cls for cls in (
         NwsAlerts, OpenFema, UsgsQuakes, UsgsGauges, Drought, FaaAirports, AviationWeather, CdcWastewater,
         FdaRecalls, CpscRecalls, CisaKev, SwpcKp, SwpcScales, NhcStorms,
-        OdinOutages, Doe202c, NercAlerts, GridOperators, RiverStages, Chokepoints,
+        OdinOutages, Doe202c, NercAlerts, GridOperators, RiverStages, Chokepoints, AirQuality, NifcWildfires,
     )
 }
 

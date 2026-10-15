@@ -307,3 +307,60 @@ async def test_chokepoints_steady_traffic_is_nominal_and_old_data_is_a_failure(c
     await r.refresh("chokepoints")
     env = r.envelope("chokepoints")
     assert env["status"] == "unknown" and env["fetch"]["error"] == "upstream data is 33 days old"
+
+
+@pytest.mark.asyncio
+async def test_air_quality_threshold_and_old_model_run(config, clock):
+    from fresnel.config import SourceCfg
+    r = Relay(config, client=make_client(), now=clock)
+    await r.refresh("air_quality")
+    env = r.envelope("air_quality")
+    assert env["status"] == "active" and env["summary"] == "US AQI 112, unhealthy for sensitive groups (PM2.5 leads)"
+    config.sources["air_quality"] = SourceCfg(params={"active_aqi": 150})
+    r = Relay(config, client=make_client(), now=clock)
+    await r.refresh("air_quality")
+    assert r.envelope("air_quality")["status"] == "nominal"
+    clock.t = clock.t + timedelta(days=1)
+    await r.refresh("air_quality")
+    env = r.envelope("air_quality")
+    assert env["status"] == "unknown" and env["fetch"]["error"] == "upstream data is 25 hours old"
+
+
+@pytest.mark.asyncio
+async def test_air_quality_without_a_value_is_a_failure(config, clock):
+    d = feeds()
+    d["air-quality-api.open-meteo.com"] = {"current": {"time": "2026-10-14T11:00", "us_aqi": None}}
+    r = Relay(config, client=make_client(data=d), now=clock)
+    await r.refresh("air_quality")
+    env = r.envelope("air_quality")
+    assert env["status"] == "unknown" and env["fetch"]["error"] == "no AQI value returned"
+
+
+@pytest.mark.asyncio
+async def test_wildfires_skip_contained_stale_and_distant_incidents(config, clock):
+    from fresnel.config import SourceCfg
+    r = Relay(config, client=make_client(), now=clock)
+    await r.refresh("nifc_wildfires")
+    env = r.envelope("nifc_wildfires")
+    assert env["status"] == "active" and env["summary"].startswith("Prairie fire, 1,200 acres, ")
+    assert [f["name"] for f in env["data"]["fires"]] == ["Prairie", "Small Brush"]  # contained, 20 days stale and out of range are dropped
+    config.sources["nifc_wildfires"] = SourceCfg(params={"min_acres": 5000})
+    r = Relay(config, client=make_client(), now=clock)
+    await r.refresh("nifc_wildfires")
+    env = r.envelope("nifc_wildfires")
+    assert env["status"] == "nominal" and env["summary"] == "2 small uncontained fires within 100 km, none over 5,000 acres"
+
+
+@pytest.mark.asyncio
+async def test_wildfires_none_reported_and_upstream_error(config, clock):
+    d = feeds()
+    d["services3.arcgis.com"] = lambda request: {"features": []}
+    r = Relay(config, client=make_client(data=d), now=clock)
+    await r.refresh("nifc_wildfires")
+    env = r.envelope("nifc_wildfires")
+    assert env["status"] == "nominal" and env["summary"] == "No uncontained wildfires reported within 100 km"
+    d["services3.arcgis.com"] = lambda request: {"error": {"code": 400}}
+    r = Relay(config, client=make_client(data=d), now=clock)
+    await r.refresh("nifc_wildfires")
+    env = r.envelope("nifc_wildfires")
+    assert env["fetch"]["ok"] is False and env["fetch"]["error"] == "upstream query error"

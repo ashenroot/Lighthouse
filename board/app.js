@@ -108,7 +108,7 @@
         moderate: "moderate flooding", major: "major flooding", not_defined: "no flood stage set" };
       const RANK = { action: 1, minor: 2, moderate: 3, major: 4 };
       const floor = RANK[d.active_min] || 2;
-      const rows = d.gauges.slice(0, 5).map((g) => {
+      const rows = d.gauges.slice(0, 4).map((g) => {
         if (!g.reporting) return row(clip(g.name, 40), "Not reporting", { url: g.url, tone: "unknown" });
         const bits = [WORDS[g.observed.category] || g.observed.category];
         if (g.observed.stage != null && g.observed.stage > -900) bits.push(`${g.observed.stage} ${g.observed.unit || "ft"}`);
@@ -129,6 +129,21 @@
       });
       rows.push(row("Data through", `${d.through} (${d.age_days} days ago)`, { url: e.source_url }));
       return rows;
+    },
+    air_quality(e, d) {
+      const rows = [row("US AQI (modeled)", `${d.aqi} · ${d.category}`,
+        { url: e.source_url, tone: e.status === "active" ? "active" : d.aqi <= 50 ? "ok" : null })];
+      if (d.pm2_5 != null) rows.push(row("PM2.5", `${d.pm2_5} µg/m³`, { url: e.source_url }));
+      return rows;
+    },
+    nifc_wildfires(e, d) {
+      if (!d.fires.length) return [row("Wildfires", e.summary, { url: e.source_url })];
+      return d.fires.map((f) => {
+        const size = f.acres != null ? `${Math.round(f.acres).toLocaleString()} ac` : "size ?";
+        const held = f.percent_contained != null ? `${Math.round(f.percent_contained)}%` : "? %";
+        return row(clip(`${f.name}, ${f.county || ""} ${f.state}`.trim(), 40), `${size} · ${held} · ${Math.round(f.distance_km)} km`,
+          { url: f.url, tone: f.big ? "active" : null });
+      });
     },
     drought(e, d) {
       const p = d.percent_area;

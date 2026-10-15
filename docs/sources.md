@@ -121,6 +121,34 @@ Goes **active** when any gauge is at `active_min` or worse, now or in the NWS fo
 
 This complements `usgs_gauges`, which reports raw heights and needs flood stages typed in by hand.
 
+### `air_quality` — Air quality (panel: Environment)
+
+The US Air Quality Index at your location, from Open-Meteo's air quality API, with the pollutant that is driving it (PM2.5, PM10 or ozone). Default interval 1 hour. No key. The scale and category names are the EPA's.
+
+These are **model estimates** (the Copernicus CAMS model), not readings from a monitor, so a local plume or thin wildfire smoke can be missed. The authoritative monitor network is AirNow, which needs a key, so Lighthouse does not use it. If the model run is older than `max_age_minutes`, or has no AQI value, the source fails (grey).
+
+Goes **active** at `active_aqi` or higher. The default, 101, is "unhealthy for sensitive groups".
+
+| Param | Default | Meaning |
+|---|---|---|
+| `active_aqi` | `101` | US AQI at which the panel turns active. |
+| `max_age_minutes` | `180` | An older model run is a failure. |
+
+### `nifc_wildfires` — Wildfires (panel: Environment)
+
+Wildfire incidents near you from the National Interagency Fire Center's current-incident feed (WFIGS): name, size in acres, percent contained and distance. Default interval 30 minutes. No key.
+
+Incidents are entered by dispatch centers and incident teams, so a new or small fire can take time to appear. **An empty list means none are reported, not that none are burning.** Fires at 100% contained, and incidents not updated for `max_age_days`, are left out. Fires with no containment figure are treated as uncontained. If the feed returns an error, the source fails (grey).
+
+Goes **active** when an uncontained fire of at least `min_acres` is within `radius_km`. Smaller fires are listed without turning the panel active.
+
+| Param | Default | Meaning |
+|---|---|---|
+| `radius_km` | `100` | Incidents within this distance of your location. |
+| `min_acres` | `100` | Size at which an uncontained fire turns the panel active. |
+| `max_age_days` | `7` | Incidents not updated for this long are ignored. |
+| `max_listed` | `6` | Most fires kept in the data. |
+
 ### `drought` — Drought Monitor (panel: Environment)
 
 The share of your county in each drought category, from the US Drought Monitor. The map updates weekly, so the default interval is 6 hours.

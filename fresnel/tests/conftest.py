@@ -65,6 +65,25 @@ GAUGES = [
 ]
 
 
+def _ms(delta: timedelta) -> int:
+    return int((NOW - delta).timestamp() * 1000)
+
+
+def _fire(name, lat, lon, acres, contained, age=timedelta(days=1)):
+    return {"attributes": {"IncidentName": name, "POOState": "US-MO", "POOCounty": "Clay", "IncidentSize": acres,
+                           "PercentContained": contained, "ModifiedOnDateTime_dt": _ms(age),
+                           "InitialLatitude": lat, "InitialLongitude": lon, "IrwinID": "{x}"}}
+
+
+FIRES = [
+    _fire("PRAIRIE", 39.30, -94.60, 1200, 20),
+    _fire("SMALL BRUSH", 39.20, -94.50, 10, 40),
+    _fire("OUT FIRE", 39.15, -94.55, 800, 100),
+    _fire("OLD FIRE", 39.18, -94.52, 900, 10, age=timedelta(days=20)),
+    _fire("FAR FIRE", 41.50, -94.00, 5000, 0),
+]
+
+
 def _portwatch(request: httpx.Request) -> dict:
     q = request.url.params
     where = q["where"]
@@ -175,6 +194,10 @@ def feeds() -> dict:
         ],
         "api.water.noaa.gov": lambda request: {"gauges": [dict(g) for g in GAUGES]},
         "services9.arcgis.com": _portwatch,
+        "services3.arcgis.com": lambda request: {"features": [dict(f) for f in FIRES]},
+        "air-quality-api.open-meteo.com": {"current": {
+            "time": "2026-10-14T11:00", "us_aqi": 112, "pm2_5": 41.0, "pm10": 50.0, "ozone": 60.0,
+            "us_aqi_pm2_5": 112, "us_aqi_pm10": 45, "us_aqi_ozone": 30}},
         "ornl.opendatasoft.com": odin_feed,
         "www.energy.gov": DOE_PAGE,
         "www.nerc.com": {"items": [

@@ -66,6 +66,13 @@ sources:
     params:
       radius_km: 50                   # NWS forecast gauges within this distance
       active_min: minor               # action | minor | moderate | major: lowest flood category that turns the panel active
+  air_quality:
+    params:
+      active_aqi: 101                 # US AQI that turns the panel active (101 = unhealthy for sensitive groups)
+  nifc_wildfires:
+    params:
+      radius_km: 100                  # incidents within this distance of your location
+      min_acres: 100                  # an uncontained fire this big turns the panel active
   chokepoints:
     params:
       # names: [Panama Canal, Suez Canal, Strait of Hormuz]   # PortWatch chokepoint names; the default is six major ones

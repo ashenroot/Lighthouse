@@ -95,7 +95,7 @@ class RiverStages(Source):
 
         flagged = sorted((g for g in gauges if g["rank"] >= 1), key=lambda g: (-g["rank"], g["distance_km"]))
         active = [g for g in flagged if g["rank"] >= floor]
-        rest = [g for g in gauges if g not in flagged and g["reporting"]]
+        rest = [g for g in gauges if g not in flagged and g["rated"]]  # a gauge with no flood thresholds says nothing, so it is not listed
         listed = (flagged + rest)[: int(self.params["max_listed"])]
         silent = len(gauges) - sum(1 for g in gauges if g["reporting"])
 
