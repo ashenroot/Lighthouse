@@ -17,6 +17,7 @@ Lighthouse is meant to run on a small server you control. This page says what le
 | `api.fda.gov` | FDA recalls | Your state, in the filter |
 | `www.saferproducts.gov` | CPSC recalls | Nothing about you |
 | `nasstatus.faa.gov` | Airport status | Nothing about you (the airport list is applied locally) |
+| `aviationweather.gov` | Airport weather | The airport codes you list |
 | `services.swpc.noaa.gov`, `www.nhc.noaa.gov` | Space weather, tropical storms | Nothing about you |
 | `www.cisa.gov` | Known exploited vulnerabilities | Nothing about you |
 | `ornl.opendatasoft.com` | Power outages (ODIN) | Your state's FIPS prefix and county code, as a filter |

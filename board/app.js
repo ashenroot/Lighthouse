@@ -117,6 +117,15 @@
         return row(x.airport, `${x.kind}${x.reason && !closure ? ": " + clip(x.reason, 40) : ""}`, { url: e.source_url, tone: closure ? null : "active" });
       });
     },
+    aviation_weather(e, d) {
+      return d.airports.map((a) => {
+        if (!a.category) return row(a.airport, "No recent report", { url: e.source_url, tone: "unknown" });
+        const parts = [a.category];
+        if (a.visibility_sm != null) parts.push(`vis ${a.visibility_sm} mi`);
+        if (a.ceiling_ft != null) parts.push(`ceiling ${a.ceiling_ft.toLocaleString()} ft`);
+        return row(a.airport, parts.join(" · "), { url: e.source_url, tone: a.active ? "active" : a.category === "VFR" ? "ok" : null });
+      });
+    },
     cdc_wastewater(e, d) {
       const names = Object.keys(d.pathogens);
       return names.map((n) =>

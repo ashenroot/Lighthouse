@@ -36,6 +36,7 @@ class Source:
     default_interval = 300
     default_params: dict[str, Any] = {}
     needs: tuple[str, ...] = ()  # params that must be non-empty, or the relay skips the source
+    inherits: dict[str, str] = {}  # param -> other source id whose value of it is used when this one is empty
 
     def __init__(self, cfg: SourceCfg, ctx: Context):
         self.ctx = ctx

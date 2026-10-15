@@ -129,6 +129,11 @@ def feeds() -> dict:
                 {"id": "us2", "properties": {"mag": 2.7, "place": "far", "time": int(NOW.timestamp() * 1000) - 5 * 86400_000, "url": "https://e/us2"}},
             ]
         },
+        "aviationweather.gov": [
+            {"icaoId": "KMCI", "name": "Kansas City Intl, MO, US", "obsTime": int(NOW.timestamp()) - 600, "fltCat": "LIFR", "visib": 1,
+             "wspd": 3, "wxString": "BR", "clouds": [{"cover": "BKN", "base": 300}, {"cover": "OVC", "base": 13000}]},
+            {"icaoId": "KATL", "name": "Atlanta, GA, US", "obsTime": int(NOW.timestamp()) - 3 * 3600 - 60, "fltCat": "VFR", "visib": "10+", "clouds": []},
+        ],
         "ornl.opendatasoft.com": odin_feed,
         "www.energy.gov": DOE_PAGE,
         "www.nerc.com": {"items": [

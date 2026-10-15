@@ -71,6 +71,10 @@ class Relay:
                 continue
             if cfg is None:
                 cfg = SourceCfg()
+            for param, other in cls.inherits.items():  # e.g. airports: use the FAA feed's list unless set here
+                other_cfg = config.sources.get(other)
+                if not cfg.params.get(param) and other_cfg and other_cfg.params.get(param):
+                    cfg = cfg.model_copy(update={"params": {**cfg.params, param: other_cfg.params[param]}})
             source_ctx = ctx
             if cfg.proxy:
                 proxied = httpx.AsyncClient(

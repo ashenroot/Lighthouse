@@ -127,6 +127,20 @@ Goes **active** for a delay or ground program. Closure notices are listed but do
 
 The FAA's content network rejects many hosting providers' address ranges. See [When a feed blocks your server](#when-a-feed-blocks-your-server).
 
+### `aviation_weather` — Airport weather (panel: Transport)
+
+The current METAR flight category at your airports, from the Aviation Weather Center: VFR (clear), MVFR (marginal), IFR (low visibility or cloud) or LIFR (very low), with visibility and the lowest cloud ceiling. Fog and low cloud cause delays before the FAA posts them, so this sits next to the FAA feed. Default interval 10 minutes. **Off until airports are set.**
+
+It uses the same airports as `faa_airports` unless you give it its own list. Three-letter FAA codes in the contiguous US are looked up as their ICAO code (`MCI` becomes `KMCI`). For Alaska, Hawaii and anything else, give the four-letter ICAO code (`PANC`, `PHNL`). An airport with no report in the last `max_age_minutes` shows "No recent report" and is never counted as clear. If none of your airports returns a current report, the source fails (grey), not nominal.
+
+Goes **active** when an airport is at `active_min` or worse. The default, IFR, is routine at some coastal airports in the morning; set `LIFR` if that is too noisy.
+
+| Param | Default | Meaning |
+|---|---|---|
+| `airports` | the `faa_airports` list | FAA or ICAO codes. |
+| `active_min` | `IFR` | `MVFR`, `IFR` or `LIFR`: the category at which the airport counts as active. |
+| `max_age_minutes` | `180` | Reports older than this are ignored. |
+
 ### `cdc_wastewater` — Wastewater (panel: Health)
 
 Viral activity in your state's wastewater, from the CDC: SARS-CoV-2, influenza A and RSV. The data updates weekly, so the default interval is 6 hours.

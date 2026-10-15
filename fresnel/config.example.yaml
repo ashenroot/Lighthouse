@@ -58,6 +58,10 @@ sources:
       airports: [MCI]                 # FAA codes to watch; the source stays off until you list some
     # proxy: socks5h://127.0.0.1:1080                 # fetch just this source through a proxy (http, https or socks5), if the
     #                                                  # publisher blocks your server's network (HTTP 403)
+  aviation_weather:
+    params:
+      # airports: [MCI]               # defaults to the faa_airports list above
+      active_min: IFR                 # MVFR | IFR | LIFR: category that turns the panel active
   usgs_gauges:
     params:
       # sites: ["02204130"]           # USGS site numbers; empty means the nearest gauges to your location

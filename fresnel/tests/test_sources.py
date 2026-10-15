@@ -30,6 +30,9 @@ async def test_all_sources_parse(relay):
     f = s["fda_recalls"]
     assert f["status"] == "active" and [r["recall_number"] for r in f["data"]["recalls"]] == ["F-1", "F-3"]
     assert s["cpsc_recalls"]["status"] == "nominal" and s["cpsc_recalls"]["data"]["count"] == 1
+    av = s["aviation_weather"]  # airports come from the FAA feed's list, so KATL is not asked for
+    assert av["status"] == "active" and av["summary"] == "MCI LIFR (ceiling 300 ft)"
+    assert av["data"]["airports"][0]["ceiling_ft"] == 300 and av["data"]["airports"][0]["icao"] == "KMCI"
     o = s["odin_outages"]
     assert o["status"] == "active" and o["data"]["county"]["customers_out"] == 1200  # county_active is 1000
     assert o["data"]["national"]["customers_out"] == 11765 and o["data"]["national"]["states_reporting"] == 3
@@ -192,3 +195,32 @@ async def test_grid_operators_choose_and_extend(config, clock):
     r = Relay(config, client=make_client(), now=clock)
     await r.refresh("grid_operators")
     assert r.envelope("grid_operators")["fetch"]["error"] == "unexpected response format"
+
+
+@pytest.mark.asyncio
+async def test_aviation_weather_threshold_stale_and_missing(config, clock):
+    from fresnel.config import SourceCfg
+    config.sources["aviation_weather"] = SourceCfg(params={"airports": ["MCI", "ATL", "ZZZ"], "active_min": "LIFR"})
+    r = Relay(config, client=make_client(), now=clock)
+    await r.refresh("aviation_weather")
+    env = r.envelope("aviation_weather")
+    cats = {a["airport"]: a["category"] for a in env["data"]["airports"]}
+    assert env["status"] == "active" and cats == {"MCI": "LIFR", "ATL": None, "ZZZ": None}  # ATL's report is over 3 hours old
+    assert "no report for ATL, ZZZ" in env["summary"]
+    config.sources["aviation_weather"] = SourceCfg(params={"airports": ["MCI"], "active_min": "LIFR"})
+    d = feeds()
+    d["aviationweather.gov"][0]["fltCat"] = "MVFR"
+    r = Relay(config, client=make_client(data=d), now=clock)
+    await r.refresh("aviation_weather")
+    env = r.envelope("aviation_weather")
+    assert env["status"] == "nominal" and env["summary"].startswith("No LIFR or worse at MCI")
+
+
+@pytest.mark.asyncio
+async def test_aviation_weather_with_no_current_reports_is_a_failure(config, clock):
+    d = feeds()
+    d["aviationweather.gov"] = []
+    r = Relay(config, client=make_client(data=d), now=clock)
+    await r.refresh("aviation_weather")
+    env = r.envelope("aviation_weather")
+    assert env["status"] == "unknown" and env["fetch"]["error"] == "unexpected response format"
