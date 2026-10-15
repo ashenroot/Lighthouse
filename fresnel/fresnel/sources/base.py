@@ -10,6 +10,10 @@ import httpx
 from ..config import Location, SourceCfg
 
 
+class SourceError(Exception):
+    """A failure whose short message is safe to show in the envelope (no URLs, no coordinates)."""
+
+
 @dataclass
 class Context:
     client: httpx.AsyncClient

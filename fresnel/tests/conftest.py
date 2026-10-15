@@ -1,5 +1,6 @@
 import json
-from datetime import datetime, timezone
+import re
+from datetime import date, datetime, timedelta, timezone
 
 import httpx
 import pytest
@@ -44,6 +45,44 @@ def odin_feed(request: httpx.Request) -> dict:
         return {"total_count": len(ODIN_STATES), "results": [dict(r) for r in ODIN_STATES]}
     assert q.get("where") == 'startswith(communitydescriptor,"29")'
     return {"total_count": len(ODIN_MO), "results": [dict(r) for r in ODIN_MO]}
+
+
+def _gauge(lid, name, lat, lon, obs, fc="fcst_not_current", age_min=30, stage=4.0, fc_stage=-999):
+    when = (NOW - timedelta(minutes=age_min)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return {"lid": lid, "name": name, "latitude": lat, "longitude": lon, "state": {"abbreviation": "MO", "name": "Missouri"},
+            "status": {"observed": {"primary": stage, "primaryUnit": "ft", "floodCategory": obs, "validTime": when},
+                       "forecast": {"primary": fc_stage, "primaryUnit": "ft", "floodCategory": fc,
+                                    "validTime": when if fc != "fcst_not_current" else "0001-01-01T00:00:00Z"}}}
+
+
+GAUGES = [
+    _gauge("MCIM7", "Missouri River at Kansas City", 39.11, -94.59, "minor", "moderate", stage=28.4, fc_stage=31.0),
+    _gauge("BLUM7", "Blue River at Kansas City", 39.05, -94.52, "action", stage=9.1),
+    _gauge("BRCM7", "Brush Creek at Kansas City", 39.03, -94.58, "no_flooding", stage=2.0),
+    _gauge("LBLM7", "Little Blue River near Independence", 39.09, -94.40, "obs_not_current", age_min=60 * 30),
+    _gauge("NODM7", "Unrated Creek", 39.20, -94.60, "not_defined", stage=1.0),
+    _gauge("FARM7", "Far River", 41.50, -94.00, "major", stage=40.0),
+]
+
+
+def _portwatch(request: httpx.Request) -> dict:
+    q = request.url.params
+    where = q["where"]
+    start = date.fromisoformat(where.split("date >= '")[1].split("'")[0])
+    names = re.findall(r"'([^']+)'", where.split(" AND ")[0])
+    last = date(2026, 10, 11)
+    rows, day = [], start
+    while day <= last:
+        for name in names:
+            if name == "Strait of Hormuz":
+                n = 80 if day < date(2026, 3, 1) else 4
+            else:
+                n = {"Panama Canal": 25, "Suez Canal": 40}.get(name, 20)
+            rows.append({"attributes": {"date": day.isoformat(), "portname": name, "n_total": n}})
+        day += timedelta(days=1)
+    offset, size = int(q.get("resultOffset", 0)), int(q["resultRecordCount"])
+    page = rows[offset: offset + size]
+    return {"features": page, **({"exceededTransferLimit": True} if offset + size < len(rows) else {})}
 
 
 def feeds() -> dict:
@@ -134,6 +173,8 @@ def feeds() -> dict:
              "wspd": 3, "wxString": "BR", "clouds": [{"cover": "BKN", "base": 300}, {"cover": "OVC", "base": 13000}]},
             {"icaoId": "KATL", "name": "Atlanta, GA, US", "obsTime": int(NOW.timestamp()) - 3 * 3600 - 60, "fltCat": "VFR", "visib": "10+", "clouds": []},
         ],
+        "api.water.noaa.gov": lambda request: {"gauges": [dict(g) for g in GAUGES]},
+        "services9.arcgis.com": _portwatch,
         "ornl.opendatasoft.com": odin_feed,
         "www.energy.gov": DOE_PAGE,
         "www.nerc.com": {"items": [

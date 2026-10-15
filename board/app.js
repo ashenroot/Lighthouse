@@ -10,11 +10,11 @@
   const PREF_KEY = "lighthouse.prefs";
   const INTERVALS = [[0, "Off"], [1, "1m"], [5, "5m"], [15, "15m"], [30, "30m"], [60, "1h"]];
   const TITLES = {
-    brief: "Keeper's Log", local: "Local", environment: "Environment", transport: "Transport", grid: "Power grid",
+    brief: "Keeper's Log", local: "Local", environment: "Environment", transport: "Transport", grid: "Power grid", supply: "Supply chain",
     space: "Space weather", tropical: "Tropical", cyber: "Cyber", health: "Health",
     recalls: "Recalls", geo: "Context headlines",
   };
-  const DEFAULT_ORDER = ["brief", "local", "environment", "transport", "grid", "space", "tropical", "cyber", "health", "recalls", "geo"];
+  const DEFAULT_ORDER = ["brief", "local", "environment", "transport", "grid", "supply", "space", "tropical", "cyber", "health", "recalls", "geo"];
   const STATE_TEXT = { nominal: "● NOMINAL", active: "▲ ACTIVE", unknown: "? UNKNOWN", info: "ℹ INFO" };
   const SEVERITY = { Unknown: 0, Minor: 1, Moderate: 2, Severe: 3, Extreme: 4 };
 
@@ -101,6 +101,34 @@
         return row(clip(g.name, 42), `${g.height_ft.toFixed(2)} ft (${c >= 0 ? "+" : ""}${c.toFixed(2)}/24h)`,
           { url: g.url, tone: g.above_flood_stage ? "active" : null });
       });
+    },
+    river_stages(e, d) {
+      if (!d.gauges.length) return [row("River gauges", e.summary, { url: e.source_url })];
+      const WORDS = { no_flooding: "no flooding", low_threshold: "low water", action: "action stage", minor: "minor flooding",
+        moderate: "moderate flooding", major: "major flooding", not_defined: "no flood stage set" };
+      const RANK = { action: 1, minor: 2, moderate: 3, major: 4 };
+      const floor = RANK[d.active_min] || 2;
+      const rows = d.gauges.slice(0, 5).map((g) => {
+        if (!g.reporting) return row(clip(g.name, 40), "Not reporting", { url: g.url, tone: "unknown" });
+        const bits = [WORDS[g.observed.category] || g.observed.category];
+        if (g.observed.stage != null && g.observed.stage > -900) bits.push(`${g.observed.stage} ${g.observed.unit || "ft"}`);
+        if (g.forecast.category) bits.push(`forecast ${g.forecast.category}`);
+        return row(clip(g.name, 40), bits.join(" · "), { url: g.url, tone: g.rank >= floor ? "active" : g.rank >= 1 ? null : "ok" });
+      });
+      rows.push(row("Gauges reporting", `${d.total - d.not_reporting} of ${d.total} within ${d.radius_km} km`,
+        { url: e.source_url, tone: d.not_reporting ? "unknown" : null }));
+      return rows;
+    },
+    chokepoints(e, d) {
+      const pct = (v) => { const n = Math.round(v); return `${n > 0 ? "+" : ""}${n === 0 ? 0 : n}%`; };
+      const rows = d.chokepoints.map((c) => {
+        if (!c.rated) return row(c.name, `Not rated (${c.reason})`, { url: e.source_url, tone: "unknown" });
+        const bits = [`${Math.round(c.recent_avg)}/day`, `${pct(c.change_pct)} ${d.baseline_days}d`];
+        if (c.year_change_pct != null) bits.push(`${pct(c.year_change_pct)} 1y`);
+        return row(c.name, bits.join(" · "), { url: e.source_url, tone: c.active ? "active" : "ok" });
+      });
+      rows.push(row("Data through", `${d.through} (${d.age_days} days ago)`, { url: e.source_url }));
+      return rows;
     },
     drought(e, d) {
       const p = d.percent_area;

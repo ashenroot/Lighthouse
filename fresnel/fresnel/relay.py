@@ -26,12 +26,15 @@ from .envelope import (
 )
 from .push import validate_payload
 from .sources import REGISTRY, Context
+from .sources.base import SourceError
 from .store import Store
 from .tokens import TokenStore
 
 
 def describe_error(exc: Exception) -> str:
     """A short error for the envelope. Never includes URLs, which carry coordinates."""
+    if isinstance(exc, SourceError):
+        return str(exc)
     if isinstance(exc, httpx.HTTPStatusError):
         return f"HTTP {exc.response.status_code}"
     if isinstance(exc, httpx.TimeoutException):

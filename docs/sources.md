@@ -104,6 +104,23 @@ sources:
       flood_stage_ft: {"06893000": 21.0}
 ```
 
+### `river_stages` — River flood stages (panel: Environment)
+
+Official NWS flood categories for the river forecast gauges around you, from NOAA's National Water Prediction Service. The category is NOAA's own call against each gauge's published flood thresholds: action stage, minor, moderate or major, for the observed stage and for the forecast where the NWS issues one. Default interval 15 minutes. No key.
+
+It looks at every NWS gauge within `radius_km` of your location. A gauge that is out of service, or whose reading is older than `max_age_hours`, is counted as **not reporting** and said so in the summary, never as fine. A gauge with no flood thresholds defined is shown but not rated. If no gauge near you is reporting, the source fails (grey). If there are no NWS gauges inside the radius at all, the panel says that and stays nominal, so widen `radius_km` in rural areas.
+
+Goes **active** when any gauge is at `active_min` or worse, now or in the NWS forecast. Action stage is a "get ready" level and is not active by default.
+
+| Param | Default | Meaning |
+|---|---|---|
+| `radius_km` | `50` | Gauges within this distance of your location. |
+| `active_min` | `minor` | `action`, `minor`, `moderate` or `major`: the lowest category that turns the panel active. |
+| `max_age_hours` | `6` | An observation older than this means the gauge is not reporting. |
+| `max_listed` | `8` | Most gauges kept in the data. The board shows the worst few and the nearest. |
+
+This complements `usgs_gauges`, which reports raw heights and needs flood stages typed in by hand.
+
 ### `drought` — Drought Monitor (panel: Environment)
 
 The share of your county in each drought category, from the US Drought Monitor. The map updates weekly, so the default interval is 6 hours.
@@ -226,6 +243,26 @@ sources:
       links:
         - {name: "Georgia Power outages", url: "https://outagemap.georgiapower.com"}
 ```
+
+### `chokepoints` — Shipping chokepoints (panel: Supply chain)
+
+Daily vessel transits through major shipping chokepoints, from the IMF's PortWatch, which counts them from satellite ship-tracking data. The default set is the Panama Canal, Suez Canal, Bab el-Mandeb Strait, Strait of Hormuz, Malacca Strait and Taiwan Strait. Default interval 6 hours. No key.
+
+Each chokepoint is judged against its own history: the latest week's daily average against the 90 days before it, and against the year before it. The year window matters because a long disruption pulls the 90-day average down with it and would otherwise look normal after a few months. A drop of `drop_pct` against either goes **active**. The summary names the chokepoint and which baseline it fell against.
+
+The data lags by a few days, and the summary says what date it runs through. If the newest data is older than `max_age_days`, the source fails (grey). A chokepoint without enough history, or averaging fewer than `min_baseline` transits a day, is listed as not rated rather than judged on noisy counts. Counts come from ship-tracking signals, so a lapse in tracking can look like a drop in traffic.
+
+| Param | Default | Meaning |
+|---|---|---|
+| `names` | the six above | PortWatch chokepoint names. Others, such as `Dover Strait`, `Gibraltar Strait` or `Yucatan Channel`, can be added. |
+| `drop_pct` | `30` | Percent below the baseline that counts as a drop. |
+| `recent_days` | `7` | Days averaged for the current figure. |
+| `baseline_days` | `90` | Days before that for the short baseline. |
+| `year_days` | `365` | Days before that for the long baseline. |
+| `max_age_days` | `10` | Older data is a failure. |
+| `min_baseline` | `5` | Chokepoints averaging fewer daily transits are not rated. |
+
+A chokepoint that has been down for months stays active until it recovers or you remove it from `names`.
 
 ### `cisa_kev` — Known exploited vulnerabilities (panel: Cyber)
 

@@ -62,6 +62,14 @@ sources:
     params:
       # airports: [MCI]               # defaults to the faa_airports list above
       active_min: IFR                 # MVFR | IFR | LIFR: category that turns the panel active
+  river_stages:
+    params:
+      radius_km: 50                   # NWS forecast gauges within this distance
+      active_min: minor               # action | minor | moderate | major: lowest flood category that turns the panel active
+  chokepoints:
+    params:
+      # names: [Panama Canal, Suez Canal, Strait of Hormuz]   # PortWatch chokepoint names; the default is six major ones
+      drop_pct: 30                    # a week this far below the 90-day or one-year average turns the panel active
   usgs_gauges:
     params:
       # sites: ["02204130"]           # USGS site numbers; empty means the nearest gauges to your location

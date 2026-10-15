@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 import pytest
 
 from conftest import make_client, feeds
@@ -224,3 +226,84 @@ async def test_aviation_weather_with_no_current_reports_is_a_failure(config, clo
     await r.refresh("aviation_weather")
     env = r.envelope("aviation_weather")
     assert env["status"] == "unknown" and env["fetch"]["error"] == "unexpected response format"
+
+
+@pytest.mark.asyncio
+async def test_river_stages_flags_observed_and_forecast_and_counts_silent_gauges(config, clock):
+    r = Relay(config, client=make_client(), now=clock)
+    await r.refresh("river_stages")
+    env = r.envelope("river_stages")
+    assert env["status"] == "active"
+    assert env["summary"].startswith("minor flooding at Missouri River at Kansas City")
+    d = env["data"]
+    assert (d["total"], d["rated"], d["not_reporting"]) == (5, 3, 1)  # the far gauge is outside the radius
+    names = [g["name"] for g in d["gauges"]]
+    assert names[0] == "Missouri River at Kansas City" and "Far River" not in names
+    assert env["source_url"] == "https://water.noaa.gov/gauges/MCIM7"
+
+
+@pytest.mark.asyncio
+async def test_river_stages_threshold_and_forecast_only(config, clock):
+    from fresnel.config import SourceCfg
+    config.sources["river_stages"] = SourceCfg(params={"active_min": "major"})
+    r = Relay(config, client=make_client(), now=clock)
+    await r.refresh("river_stages")
+    env = r.envelope("river_stages")
+    assert env["status"] == "nominal" and env["summary"].startswith("No gauge at major flooding or worse among 3 rated within 50 km")
+    assert "1 not reporting" in env["summary"]
+    config.sources["river_stages"] = SourceCfg(params={"active_min": "moderate"})
+    r = Relay(config, client=make_client(), now=clock)
+    await r.refresh("river_stages")
+    env = r.envelope("river_stages")
+    assert env["status"] == "active" and env["summary"] == "moderate flooding forecast at Missouri River at Kansas City"
+
+
+@pytest.mark.asyncio
+async def test_river_stages_with_no_reporting_gauges_is_a_failure(config, clock):
+    from conftest import GAUGES
+    d = feeds()
+    d["api.water.noaa.gov"] = lambda request: {"gauges": [g for g in GAUGES if g["lid"] == "LBLM7"]}
+    r = Relay(config, client=make_client(data=d), now=clock)
+    await r.refresh("river_stages")
+    env = r.envelope("river_stages")
+    assert env["status"] == "unknown" and env["fetch"]["error"] == "no gauges reporting"
+
+
+@pytest.mark.asyncio
+async def test_river_stages_with_no_gauges_nearby_says_so(config, clock):
+    d = feeds()
+    d["api.water.noaa.gov"] = lambda request: {"gauges": []}
+    r = Relay(config, client=make_client(data=d), now=clock)
+    await r.refresh("river_stages")
+    env = r.envelope("river_stages")
+    assert env["status"] == "nominal" and env["summary"] == "No NWS river forecast gauges within 50 km"
+
+
+@pytest.mark.asyncio
+async def test_chokepoints_judges_against_the_year_as_well_as_the_quarter(config, clock):
+    from fresnel.config import SourceCfg
+    config.sources["chokepoints"] = SourceCfg(params={"names": ["Panama Canal", "Strait of Hormuz", "Suez Canal"]})
+    r = Relay(config, client=make_client(), now=clock)
+    await r.refresh("chokepoints")
+    env = r.envelope("chokepoints")
+    rows = {c["name"]: c for c in env["data"]["chokepoints"]}
+    assert env["status"] == "active"
+    assert env["summary"].startswith("Strait of Hormuz -") and "vs 1-year normal" in env["summary"]
+    assert "(data through 2026-10-11)" in env["summary"]
+    # Hormuz fell in March, so the 90-day baseline has absorbed it and only the year shows the drop.
+    assert rows["Strait of Hormuz"]["change_pct"] == 0.0 and rows["Strait of Hormuz"]["year_change_pct"] < -30
+    assert rows["Panama Canal"]["active"] is False and rows["Panama Canal"]["worst_pct"] == 0.0
+
+
+@pytest.mark.asyncio
+async def test_chokepoints_steady_traffic_is_nominal_and_old_data_is_a_failure(config, clock):
+    from fresnel.config import SourceCfg
+    config.sources["chokepoints"] = SourceCfg(params={"names": ["Panama Canal", "Suez Canal"]})
+    r = Relay(config, client=make_client(), now=clock)
+    await r.refresh("chokepoints")
+    env = r.envelope("chokepoints")
+    assert env["status"] == "nominal" and env["summary"].startswith("All 2 rated chokepoints within 30% of their normal")
+    clock.t = clock.t + timedelta(days=30)
+    await r.refresh("chokepoints")
+    env = r.envelope("chokepoints")
+    assert env["status"] == "unknown" and env["fetch"]["error"] == "upstream data is 33 days old"

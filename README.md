@@ -77,9 +77,10 @@ The board itself is described in [`board/README.md`](board/README.md).
 | Panel | Feeds | Turns active when |
 |---|---|---|
 | Local | NWS alerts, FEMA declarations, USGS earthquakes | an alert of moderate or higher severity, a recent declaration for your county, a nearby quake of M4 or more |
-| Environment | USGS stream gauges, Drought Monitor | a gauge above flood stage (if you set one), half the county in severe drought |
+| Environment | NWS river flood stages, USGS stream gauges, Drought Monitor | a nearby river gauge at minor flooding or worse (observed or forecast), half the county in severe drought |
 | Transport | FAA airport status, airport weather (METAR) | a delay or ground program at an airport you list, or IFR or worse weather there |
 | Power grid | ODIN customer outages, DOE 202(c) emergency orders, NERC alerts, links to regional operators | reported outages reach a threshold in your county or state, a new DOE emergency order (not a plant-retention renewal) |
+| Supply chain | IMF PortWatch shipping chokepoints | a major chokepoint's weekly traffic far below its 90-day or one-year norm |
 | Space | NOAA planetary K-index and scales | a geomagnetic storm of G1 or more, a radio blackout of R2 or more, a radiation storm of S1 or more |
 | Tropical | National Hurricane Center | a storm in the basin you watch |
 | Cyber | CISA Known Exploited Vulnerabilities | new entries in the last day |
