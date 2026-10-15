@@ -314,6 +314,36 @@ curl -sS -m 20 -x socks5h://127.0.0.1:1080 -o /dev/null -w "%{http_code}\n" http
 
 A `200` means it works. Use a dedicated SSH account with no shell for the tunnel, and run it as a service on the home machine so it restarts after a reboot or a dropped connection. If the tunnel is down, the source goes unknown and nothing else is affected. If the proxy URL carries a username and password, keep the config file private.
 
+### Keeping the tunnel up
+
+A laptop that sleeps drops the tunnel. Run it from a machine that stays on, such as a Raspberry Pi or a small home server. On a Linux machine with systemd, create `/etc/systemd/system/fresnel-tunnel.service`:
+
+```ini
+[Unit]
+Description=Reverse SOCKS tunnel to the Lighthouse server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=pi
+ExecStart=/usr/bin/ssh -N -R 127.0.0.1:1080 \
+  -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -o ExitOnForwardFailure=yes \
+  -i /home/pi/.ssh/tunnel_key tunnel@your-server
+Restart=always
+RestartSec=15
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Change `User`, the key path and the server address, then `sudo systemctl enable --now fresnel-tunnel`.
+
+- Make the key with `ssh-keygen -t ed25519 -f ~/.ssh/tunnel_key -N ""` on the home machine, and add its public half to `~tunnel/.ssh/authorized_keys` on the server. Create that account with `sudo adduser --disabled-password --shell /usr/sbin/nologin tunnel`; `ssh -N` does not need a shell.
+- On the server, prefix the key's line in `authorized_keys` with `restrict,port-forwarding,permitlisten="127.0.0.1:1080"` so the key can open that one port and nothing else (OpenSSH 8.0 or newer). Check that the tunnel still comes up afterwards, and remove the `permitlisten` part if your version rejects it.
+- `ServerAliveInterval` lets the client notice a dead connection within about 90 seconds, and `ExitOnForwardFailure` makes it quit and retry if the server still holds the old connection's port.
+- On a Mac, a launchd agent that runs the same `ssh` command with `KeepAlive` does the job, but the tunnel still drops whenever the Mac sleeps.
+
+
 ## Adding a source
 
 Sources are small: one file in `fresnel/fresnel/sources/` that sets an `id`, `title`, `panel`, `page` (the publisher's page) and `default_interval`, and implements `async def fetch()` returning a `Result` with the data, a one-line summary, `nominal` or `active`, and a link. Register it in `fresnel/fresnel/sources/__init__.py`, give it fixture data in the tests, and add a renderer in `board/app.js` if the default rows do not suit it. `sources/cisa_kev.py` is a complete short example. This is for people running their own fork.
