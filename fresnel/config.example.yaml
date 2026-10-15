@@ -42,6 +42,17 @@ sources:
   openfema:
     params:
       active_days: 30
+  odin_outages:
+    params:
+      county_active: 1000             # customers out in your county (reported to ODIN) that turn the panel active
+      state_active: 25000             # ... or in your state
+  doe_202c:
+    params:
+      active_days: 14                 # a new emergency order (not a plant-retention renewal) is news for this long
+  grid_operators:
+    params:
+      operators: [ercot, caiso, pjm, miso, spp, nyiso, isone, eia]   # trim to the dashboards you care about
+      # links: [{name: "My utility", url: "https://example.org/outages"}]
   faa_airports:
     params:
       airports: [MCI]                 # FAA codes to watch; the source stays off until you list some

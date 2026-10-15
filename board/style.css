@@ -59,6 +59,7 @@ a.row:hover{background:#1b252c}
 .row .v{text-align:right;color:var(--strong);min-width:0;overflow-wrap:anywhere}
 .row.t-active .v{color:var(--warn)} .row.t-ok .v{color:var(--ok)} .row.t-unknown .v{color:var(--unk)}
 .row.stale{opacity:.55}
+.chips{padding:9px 0 2px}.chips .k{display:block;color:var(--muted);margin-bottom:6px}.chips div{display:flex;flex-wrap:wrap;gap:6px 14px}.chips a{color:var(--accent)}
 .sub{font-size:12px;color:var(--muted)}
 .foot-src{margin-top:auto;padding:10px 16px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:6px 16px;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11px;color:var(--muted)}
 .foot-src .bad{color:var(--warn)}

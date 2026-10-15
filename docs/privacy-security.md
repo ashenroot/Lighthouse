@@ -19,6 +19,8 @@ Lighthouse is meant to run on a small server you control. This page says what le
 | `nasstatus.faa.gov` | Airport status | Nothing about you (the airport list is applied locally) |
 | `services.swpc.noaa.gov`, `www.nhc.noaa.gov` | Space weather, tropical storms | Nothing about you |
 | `www.cisa.gov` | Known exploited vulnerabilities | Nothing about you |
+| `ornl.opendatasoft.com` | Power outages (ODIN) | Your state's FIPS prefix and county code, as a filter |
+| `www.energy.gov`, `www.nerc.com` | DOE emergency orders, NERC alerts | Nothing about you |
 
 Every request also carries the IP address of your server, as any web request does. The installer, and `fresnel init`, send your coordinates once to `geo.fcc.gov` to look up your state and county.
 

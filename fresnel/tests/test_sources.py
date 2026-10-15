@@ -30,6 +30,19 @@ async def test_all_sources_parse(relay):
     f = s["fda_recalls"]
     assert f["status"] == "active" and [r["recall_number"] for r in f["data"]["recalls"]] == ["F-1", "F-3"]
     assert s["cpsc_recalls"]["status"] == "nominal" and s["cpsc_recalls"]["data"]["count"] == 1
+    o = s["odin_outages"]
+    assert o["status"] == "active" and o["data"]["county"]["customers_out"] == 1200  # county_active is 1000
+    assert o["data"]["national"]["customers_out"] == 11765 and o["data"]["national"]["states_reporting"] == 3
+    assert o["data"]["state"]["customers_out"] == 1500 and "floor" in o["summary"]
+    d = s["doe_202c"]
+    assert d["status"] == "active" and d["data"]["fresh"] == ["202-26-50"]  # the plant-retention renewal is not news
+    assert d["data"]["in_force"] == 2 and d["data"]["read"] == d["data"]["on_page"] == 3
+    n = s["nerc_alerts"]
+    assert n["status"] == "nominal" and [a["level"] for a in n["data"]["alerts"]] == [3, 2]  # webinar and off-path files skipped
+    assert n["data"]["alerts"][0]["url"].startswith("https://www.nerc.com/globalassets/")
+    g = s["grid_operators"]
+    assert g["status"] == "nominal" and any(x["name"] == "ERCOT" for x in g["data"]["links"])
+    assert snap["panels"]["grid"]["status"] == "active"
     assert snap["panels"]["local"]["status"] == "active"
     assert snap["panels"]["transport"]["status"] == "active"
     assert all(e["fetch"]["ok"] and not e["fetch"]["stale"] for e in s.values())
@@ -135,3 +148,47 @@ def test_proxy_must_be_an_http_url():
 async def test_unfetched_source_still_links_to_its_publisher(relay):
     env = relay.envelope("cisa_kev")
     assert env["status"] == "unknown" and env["source_url"] == "https://www.cisa.gov/known-exploited-vulnerabilities-catalog"
+
+
+@pytest.mark.asyncio
+async def test_odin_with_no_reports_in_state_is_nominal_and_says_so(config, clock):
+    config.location.state, config.location.county_fips = "GA", "13113"
+    d = feeds()
+    d["ornl.opendatasoft.com"] = lambda req: {"results": []} if req.url.params.get("group_by") != "state" else {"results": [{"state": "Kansas", "out": 50, "n": 1}]}
+    r = Relay(config, client=make_client(data=d), now=clock)
+    await r.refresh("odin_outages")
+    env = r.envelope("odin_outages")
+    assert env["status"] == "nominal" and "none reported in GA" in env["summary"] and "not an all-clear" in env["summary"]
+    assert env["data"]["state"]["reporting"] is False
+
+
+@pytest.mark.asyncio
+async def test_doe_page_it_cannot_read_is_a_failure_not_an_empty_list(config, clock):
+    d = feeds()
+    d["www.energy.gov"] = "<html><body>Orders 202-26-50 and 202-26-49 are listed in a layout this reader does not know.</body></html>"
+    r = Relay(config, client=make_client(data=d), now=clock)
+    await r.refresh("doe_202c")
+    env = r.envelope("doe_202c")
+    assert env["status"] == "unknown" and env["fetch"]["error"] == "unexpected response format"
+
+
+@pytest.mark.asyncio
+async def test_nerc_search_that_finds_no_alerts_is_a_failure(config, clock):
+    d = feeds()
+    d["www.nerc.com"] = {"items": [{"documentResult": {"title": "Something else", "modifiedDate": "May 4, 2026", "url": "/x/y.pdf"}}]}
+    r = Relay(config, client=make_client(data=d), now=clock)
+    await r.refresh("nerc_alerts")
+    assert r.envelope("nerc_alerts")["fetch"]["error"] == "unexpected response format"
+
+
+@pytest.mark.asyncio
+async def test_grid_operators_choose_and_extend(config, clock):
+    from fresnel.config import SourceCfg
+    config.sources["grid_operators"] = SourceCfg(params={"operators": ["pjm"], "links": [{"name": "My utility", "url": "https://example.org/outages"}]})
+    r = Relay(config, client=make_client(), now=clock)
+    await r.refresh("grid_operators")
+    assert [x["name"] for x in r.envelope("grid_operators")["data"]["links"]] == ["PJM", "My utility"]
+    config.sources["grid_operators"] = SourceCfg(params={"operators": ["nope"]})
+    r = Relay(config, client=make_client(), now=clock)
+    await r.refresh("grid_operators")
+    assert r.envelope("grid_operators")["fetch"]["error"] == "unexpected response format"

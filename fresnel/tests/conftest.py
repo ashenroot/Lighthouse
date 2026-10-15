@@ -20,6 +20,32 @@ class Clock:
         return self.t
 
 
+DOE_PAGE = (
+    "<html><body>"
+    "<p>On October 12, 2026 , the U.S. Department of Energy (DOE) issued emergency DOE Order No. 202-26-50 , pursuant to section 202(c) "
+    "of the Federal Power Act, to PJM Interconnection, L.L.C. (PJM) . The order directs PJM to dispatch specified units and to order their "
+    "operation as needed to maintain reliability. The order is effective through January 10, 2027.</p>"
+    "<p>On October 10, 2026 , the U.S. Department of Energy (DOE) issued DOE Order No. 202-26-49 , pursuant to section 202(c), "
+    "to Tri-State Generation and Transmission (Tri-State) . Unit 1 remains available to operate. The order is in effect through January 8, 2027.</p>"
+    "<p>On July 1, 2026 , the U.S. Department of Energy (DOE) issued DOE Order No. 202-26-30 , pursuant to section 202(c), "
+    "to Duke Energy Carolinas, LLC (DEC) . The order directs DEC to dispatch specified units. The order is effective through September 29, 2026.</p>"
+    "</body></html>"
+)
+
+ODIN_STATES = [{"state": "Kansas", "out": 9210, "n": 31}, {"state": "Missouri", "out": 1500, "n": 6},
+               {"state": "Texas", "out": 1055, "n": 51}, {"state": "Utah", "out": None, "n": 1}]
+ODIN_MO = [{"communitydescriptor": "29095", "county": "Jackson", "out": 1200, "n": 4},
+           {"communitydescriptor": "29047", "county": "Clay", "out": 300, "n": 2}]
+
+
+def odin_feed(request: httpx.Request) -> dict:
+    q = request.url.params
+    if q.get("group_by") == "state":
+        return {"total_count": len(ODIN_STATES), "results": [dict(r) for r in ODIN_STATES]}
+    assert q.get("where") == 'startswith(communitydescriptor,"29")'
+    return {"total_count": len(ODIN_MO), "results": [dict(r) for r in ODIN_MO]}
+
+
 def feeds() -> dict:
     return {
         "api.weather.gov": {
@@ -103,6 +129,18 @@ def feeds() -> dict:
                 {"id": "us2", "properties": {"mag": 2.7, "place": "far", "time": int(NOW.timestamp() * 1000) - 5 * 86400_000, "url": "https://e/us2"}},
             ]
         },
+        "ornl.opendatasoft.com": odin_feed,
+        "www.energy.gov": DOE_PAGE,
+        "www.nerc.com": {"items": [
+            {"documentResult": {"title": "Level 3 Computational Load Alert.pdf", "modifiedDate": "May 4, 2026", "extension": "PDF",
+                                "url": "/globalassets/programs/bpsa/alerts/level-3-computational-load-alert.pdf"}},
+            {"documentResult": {"title": "NERC Alert Level 2  Large Loads.pdf", "modifiedDate": "September 15, 2025", "extension": "PDF",
+                                "url": "/globalassets/programs/bpsa/alerts/2025/nerc-alert-level-2--large-loads.pdf"}},
+            {"documentResult": {"title": "Presentation Level 3 Alert Essential Actions Webinar", "modifiedDate": "May 8, 2023",
+                                "extension": "PDF", "url": "/globalassets/programs/bpsa/alerts/2023/webinar.pdf"}},
+            {"documentResult": {"title": "Inverter Alert", "modifiedDate": "May 8, 2023", "extension": "PDF",
+                                "url": "/globalassets/programs/other/inverter-alert.pdf"}},
+        ]},
         "www.fema.gov": {
             "DisasterDeclarationsSummaries": [
                 {"disasterNumber": 4999, "declarationType": "DR", "declarationTitle": "SEVERE STORMS",
@@ -128,6 +166,8 @@ def make_client(fail: bool = False, data: dict | None = None) -> httpx.AsyncClie
         if fail:
             raise httpx.ConnectError("boom https://api.weather.gov/?point=39.1000,-94.6000")
         payload = data.get(request.url.path) or data[request.url.host]
+        if callable(payload):
+            payload = payload(request)
         if isinstance(payload, str):
             return httpx.Response(200, text=payload)
         return httpx.Response(200, json=payload)

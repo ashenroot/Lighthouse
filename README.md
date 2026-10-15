@@ -9,7 +9,7 @@ Nothing is hardcoded to one place. You give it coordinates and it works for any 
 ## The parts
 
 ```
- public feeds (NWS, USGS, FEMA, CISA, NOAA, FAA, CDC, FDA ...)
+ public feeds (NWS, USGS, FEMA, CISA, NOAA, FAA, CDC, FDA, DOE ...)
         │  fetched on a schedule
         ▼
  ┌─────────────────────────────┐        daily brief (optional)
@@ -79,6 +79,7 @@ The board itself is described in [`board/README.md`](board/README.md).
 | Local | NWS alerts, FEMA declarations, USGS earthquakes | an alert of moderate or higher severity, a recent declaration for your county, a nearby quake of M4 or more |
 | Environment | USGS stream gauges, Drought Monitor | a gauge above flood stage (if you set one), half the county in severe drought |
 | Transport | FAA airport status | a delay or ground program at an airport you list |
+| Power grid | ODIN customer outages, DOE 202(c) emergency orders, NERC alerts, links to regional operators | reported outages reach a threshold in your county or state, a new DOE emergency order (not a plant-retention renewal) |
 | Space | NOAA planetary K-index and scales | a geomagnetic storm of G1 or more, a radio blackout of R2 or more, a radiation storm of S1 or more |
 | Tropical | National Hurricane Center | a storm in the basin you watch |
 | Cyber | CISA Known Exploited Vulnerabilities | new entries in the last day |

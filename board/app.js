@@ -10,11 +10,11 @@
   const PREF_KEY = "lighthouse.prefs";
   const INTERVALS = [[0, "Off"], [1, "1m"], [5, "5m"], [15, "15m"], [30, "30m"], [60, "1h"]];
   const TITLES = {
-    brief: "Keeper's Log", local: "Local", environment: "Environment", transport: "Transport",
+    brief: "Keeper's Log", local: "Local", environment: "Environment", transport: "Transport", grid: "Power grid",
     space: "Space weather", tropical: "Tropical", cyber: "Cyber", health: "Health",
     recalls: "Recalls", geo: "Context headlines",
   };
-  const DEFAULT_ORDER = ["brief", "local", "environment", "transport", "space", "tropical", "cyber", "health", "recalls", "geo"];
+  const DEFAULT_ORDER = ["brief", "local", "environment", "transport", "grid", "space", "tropical", "cyber", "health", "recalls", "geo"];
   const STATE_TEXT = { nominal: "● NOMINAL", active: "▲ ACTIVE", unknown: "? UNKNOWN", info: "ℹ INFO" };
   const SEVERITY = { Unknown: 0, Minor: 1, Moderate: 2, Severe: 3, Extreme: 4 };
 
@@ -137,6 +137,37 @@
       if (!d.recent.length) return [row("CISA KEV", e.summary, { url: e.source_url, tone: "ok" })];
       return d.recent.slice(0, 6).map((v, i) =>
         row(v.cve, clip(`${v.vendor} ${v.product}`, 50), { url: v.url, tone: i < d.newest_count ? "active" : null }));
+    },
+    odin_outages(e, d) {
+      const url = e.source_url, hot = e.status === "active" ? "active" : null;
+      const where = d.state.reporting
+        ? `${d.state.customers_out.toLocaleString()} out` + (d.county.reporting ? ` · ${d.county.customers_out.toLocaleString()} in county` : "")
+        : "None reported";
+      return [
+        row(`${d.state.abbr} customers (reported)`, where, { url, tone: hot }),
+        row("US (reported)", `${d.national.customers_out.toLocaleString()} · ${d.national.states_reporting} states`, { url }),
+        row("Coverage", "Voluntary. A floor, not an all-clear.", { url }),
+      ];
+    },
+    doe_202c(e, d) {
+      const rows = [row("Orders in force", String(d.in_force), { url: e.source_url })];
+      const KIND = { "retirement deferral": "plant kept open", "event dispatch": "event", "capacity assurance": "capacity" };
+      d.orders.slice(0, 3).forEach((o) => {
+        const fresh = d.fresh.includes(o.id);
+        rows.push(row(o.date, clip(`${o.recipient || o.id} · ${KIND[o.character] || "unclassified"}`, 60), { url: e.source_url, tone: fresh ? "active" : null }));
+      });
+      if (d.read < d.on_page) rows.push(row("Orders read", `${d.read} of ${d.on_page} on the page`, { url: e.source_url }));
+      return rows;
+    },
+    nerc_alerts(e, d) {
+      return d.alerts.slice(0, 3).map((a) => row(a.date, clip(a.title, 60), { url: a.url }));
+    },
+    grid_operators(e, d) {
+      const chips = d.links.map((l) => {
+        const u = safeUrl(l.url);
+        return u ? h("a", { href: u, target: "_blank", rel: "noopener", title: l.region || l.name }, l.name) : null;
+      });
+      return [h("div", { class: "chips" }, h("span", { class: "k" }, "Regional dashboards"), h("div", {}, chips))];
     },
     swpc_kp(e) {
       return [row("Planetary Kp", e.summary, { url: e.source_url, tone: e.status === "active" ? "active" : null })];
