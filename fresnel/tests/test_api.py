@@ -82,6 +82,7 @@ def test_serves_board_when_configured(config, relay, tmp_path):
     with TestClient(create_app(config, relay=relay, start_background=False)) as c:
         r = c.get("/")
         assert r.status_code == 200 and "Lighthouse" in r.text
+        assert r.headers["cache-control"] == "no-cache"  # revalidate, so a board update needs no hard refresh
         assert "default-src 'self'" in r.headers["content-security-policy"]
         assert c.get("/v1/health").status_code == 200  # API still wins over the static mount
 

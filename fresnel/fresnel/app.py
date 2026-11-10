@@ -40,6 +40,15 @@ def _etag(body: dict) -> str:
     return f'"{digest[:16]}"'
 
 
+class _Board(StaticFiles):
+    """Board files are revalidated on every load, so an update shows up without a hard refresh."""
+
+    def file_response(self, *args, **kwargs):
+        response = super().file_response(*args, **kwargs)
+        response.headers["Cache-Control"] = "no-cache"
+        return response
+
+
 def create_app(config: Config, relay: Relay | None = None, start_background: bool = True) -> FastAPI:
     relay = relay or Relay(config)
 
@@ -149,6 +158,6 @@ def create_app(config: Config, relay: Relay | None = None, start_background: boo
             raise HTTPException(422, problems[:20])
 
     if board_dir is not None:  # mounted last so the /v1 routes above take precedence
-        app.mount("/", StaticFiles(directory=board_dir, html=True), name="board")
+        app.mount("/", _Board(directory=board_dir, html=True), name="board")
 
     return app
