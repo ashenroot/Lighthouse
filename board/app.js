@@ -74,7 +74,7 @@
   function row(label, value, o) {
     o = o || {};
     const url = o.url ? safeUrl(o.url) : null;
-    const cls = "row" + (o.tone ? " t-" + o.tone : "") + (o.stale ? " stale" : "");
+    const cls = "row" + (o.tone ? " t-" + o.tone : "") + (o.stale ? " stale" : "") + (o.stack ? " stack" : "");
     const kids = [h("span", { class: "k" }, label), h("span", { class: "v" }, value)];
     return url ? h("a", { class: cls, href: url, target: "_blank", rel: "noopener" }, kids) : h("div", { class: cls }, kids);
   }
@@ -168,8 +168,8 @@
       return rows;
     },
     rss_headlines(e, d) {
-      const rows = d.headlines.map((h) => row(h.outlet, clip(h.title, 80), { url: h.url }));
-      for (const f of d.feeds) if (!f.ok) rows.push(row(f.name, f.problem, { tone: "unknown" }));
+      const rows = d.headlines.map((x) => row(x.outlet, clip(x.title, 120), { url: x.url, stack: true }));
+      for (const f of d.feeds) if (!f.ok) rows.push(row(f.name, f.problem, { tone: "unknown", stack: true }));
       return rows.length ? rows : [row("Headlines", e.summary, { url: e.source_url })];
     },
     drought(e, d) {
@@ -485,7 +485,7 @@
     } else if (!m.envs.length && m.push) {
       body = contextPanel(m.push[0]); foot = null;
     } else {
-      body = h("div", { class: "rows" }, m.envs.flatMap(sourceRows));
+      body = h("div", { class: "rows" + (m.id === "headlines" ? " multi" : "") }, m.envs.flatMap(sourceRows));
       foot = sourceFooter(m.envs);
     }
     const mv = (dir, label) => h("button", { type: "button", class: "mv", "aria-label": `Move ${title} ${label}`, onclick: () => move(m.id, dir) }, dir < 0 ? "◀" : "▶");
@@ -495,7 +495,7 @@
     }, ondragend: () => { dragId = null; document.querySelectorAll(".panel").forEach((p) => p.classList.remove("dragging", "over")); } },
       h("h2", {}, title),
       h("div", { class: "hd-right" }, mv(-1, "earlier"), mv(1, "later"), h("span", { class: "badge " + m.status }, STATE_TEXT[m.status] || m.status)));
-    const el = h("section", { class: "panel" + (m.id === "brief" ? " wide" : ""), id: "panel-" + m.id, "aria-label": title,
+    const el = h("section", { class: "panel" + (m.id === "brief" || m.id === "headlines" ? " wide" : ""), id: "panel-" + m.id, "aria-label": title,
       ondragover: (ev) => { if (dragId && dragId !== m.id) { ev.preventDefault(); el.classList.add("over"); } },
       ondragleave: () => el.classList.remove("over"),
       ondrop: (ev) => { ev.preventDefault(); el.classList.remove("over"); if (dragId) reorder(dragId, m.id); } },
