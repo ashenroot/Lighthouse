@@ -73,6 +73,20 @@ sources:
     params:
       radius_km: 100                  # incidents within this distance of your location
       min_acres: 100                  # an uncontained fire this big turns the panel active
+  fdic_failures:
+    params:
+      active_days: 14                 # a bank failure this recent turns the panel active
+  federal_register:
+    params:
+      active_days: 7                  # a new national emergency declaration this recent turns the panel active
+  spc_storm_reports:
+    params:
+      radius_km: 150                  # storm reports within this distance; tornado, wind damage, 1 in hail or larger are significant
+  rss_headlines:
+    params:
+      # feeds: choose your own. Each takes name, url, and optionally keywords (keep only matching items) and max_items.
+      # The defaults are BBC World and NPR. A feed whose newest item is older than stale_days is reported as stale.
+      stale_days: 3
   chokepoints:
     params:
       # names: [Panama Canal, Suez Canal, Strait of Hormuz]   # PortWatch chokepoint names; the default is six major ones

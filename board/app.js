@@ -10,11 +10,11 @@
   const PREF_KEY = "lighthouse.prefs";
   const INTERVALS = [[0, "Off"], [1, "1m"], [5, "5m"], [15, "15m"], [30, "30m"], [60, "1h"]];
   const TITLES = {
-    brief: "Keeper's Log", local: "Local", environment: "Environment", transport: "Transport", grid: "Power grid", supply: "Supply chain",
+    brief: "Keeper's Log", local: "Local", environment: "Environment", transport: "Transport", grid: "Power grid", supply: "Supply chain", finance: "Finance", federal: "Federal actions", headlines: "Headlines",
     space: "Space weather", tropical: "Tropical", cyber: "Cyber", health: "Health",
     recalls: "Recalls", geo: "Context headlines",
   };
-  const DEFAULT_ORDER = ["brief", "local", "environment", "transport", "grid", "supply", "space", "tropical", "cyber", "health", "recalls", "geo"];
+  const DEFAULT_ORDER = ["brief", "local", "environment", "transport", "grid", "supply", "finance", "federal", "space", "tropical", "cyber", "health", "recalls", "geo", "headlines"];
   const STATE_TEXT = { nominal: "● NOMINAL", active: "▲ ACTIVE", unknown: "? UNKNOWN", info: "ℹ INFO" };
   const SEVERITY = { Unknown: 0, Minor: 1, Moderate: 2, Severe: 3, Extreme: 4 };
 
@@ -144,6 +144,33 @@
         return row(clip(`${f.name}, ${f.county || ""} ${f.state}`.trim(), 40), `${size} · ${held} · ${Math.round(f.distance_km)} km`,
           { url: f.url, tone: f.big ? "active" : null });
       });
+    },
+    fdic_failures(e, d) {
+      const money = (v) => (v >= 1e9 ? `$${(v / 1e9).toFixed(1)}B` : `$${Math.round(v / 1e6)}M`);
+      const rows = d.failures.slice(0, 4).map((f) => row(clip(`${f.name}, ${f.place || ""}`, 40),
+        `${f.date}${f.assets_usd ? " · " + money(f.assets_usd) : ""}`, { url: e.source_url, tone: f.days_ago <= d.active_days ? "active" : null }));
+      rows.push(row("Since last failure", `${d.days_since_last} days · ${d.window_count} in ${d.window_days} days`, { url: e.source_url }));
+      return rows;
+    },
+    federal_register(e, d) {
+      const rows = [
+        ...d.emergencies.map((x) => row(`Emergency ${x.date}`, clip(x.title, 56), { url: x.url, tone: "active" })),
+        ...d.orders.map((x) => row(`EO ${x.number || ""} · ${x.date}`.trim(), clip(x.title, 56), { url: x.url })),
+      ];
+      return rows.length ? rows : [row("Presidential docs", e.summary, { url: e.source_url })];
+    },
+    spc_storm_reports(e, d) {
+      if (!d.reports.length) return [row("Storm reports", e.summary, { url: e.source_url })];
+      const ago = (m) => (m < 60 ? `${m} min ago` : `${Math.floor(m / 60)} h ago`);
+      const rows = d.reports.slice(0, 5).map((r) => row(r.detail.charAt(0).toUpperCase() + r.detail.slice(1),
+        `${Math.round(r.distance_km)} km · ${ago(r.age_min)}`, { url: e.source_url, tone: r.significant && r.age_min <= d.active_hours * 60 ? "active" : null }));
+      rows.push(row("Reports in range", `${d.in_range} of ${d.nationwide} nationwide`, { url: e.source_url }));
+      return rows;
+    },
+    rss_headlines(e, d) {
+      const rows = d.headlines.map((h) => row(h.outlet, clip(h.title, 80), { url: h.url }));
+      for (const f of d.feeds) if (!f.ok) rows.push(row(f.name, f.problem, { tone: "unknown" }));
+      return rows.length ? rows : [row("Headlines", e.summary, { url: e.source_url })];
     },
     drought(e, d) {
       const p = d.percent_area;

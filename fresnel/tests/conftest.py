@@ -65,6 +65,45 @@ GAUGES = [
 ]
 
 
+FDIC = {"data": [
+    {"data": {"NAME": "EXAMPLE BANK", "CITYST": "TOWN, KS", "FAILDATE": "10/10/2026", "QBFASSET": 50000, "RESTYPE": "FAILURE", "ID": "2"}, "score": 1},
+    {"data": {"NAME": "OLD BANK", "CITYST": "PLACE, GA", "FAILDATE": "5/1/2026", "QBFASSET": 3808, "RESTYPE": "FAILURE", "ID": "1"}, "score": 1},
+]}
+
+
+def _doc(title, date_, subtype, number=None):
+    return {"title": title, "publication_date": date_, "subtype": subtype, "document_number": "x", "html_url": "https://www.federalregister.gov/d/x",
+            "executive_order_number": number}
+
+
+FEDREG = {"results": [
+    _doc("Improving Widget Policy", "2026-10-12", "Executive Order", "14500"),
+    _doc("Declaring a National Emergency With Respect to Widgets", "2026-10-11", "Proclamation"),
+    _doc("Continuation of the National Emergency With Respect to Venezuela", "2026-10-10", "Notice"),
+    _doc("Old Order", "2026-08-01", "Executive Order", "14400"),
+]}
+
+SPC_CSV = (
+    "Time,F_Scale,Location,County,State,Lat,Lon,Comments\n"
+    "1400,UNK,3 N Liberty,Clay,MO,39.30,-94.42,(EAX)\n"
+    "Time,Speed,Location,County,State,Lat,Lon,Comments\n"
+    '1430,UNK,2 E Kansas City,Jackson,MO,39.10,-94.55,"Trees down, power lines (EAX)"\n'
+    "1300,45,Far Town,Polk,IA,41.60,-93.60,(DMX)\n"
+    "Time,Size,Location,County,State,Lat,Lon,Comments\n"
+    "1440,75,Overland Park,Johnson,KS,38.98,-94.67,(EAX)\n"
+)
+
+
+def rss(*items, doctype=""):
+    body = "".join(f"<item><title>{t}</title><link>https://example.org/{i}</link><pubDate>{d}</pubDate><description>{t} details</description></item>"
+                   for i, (t, d) in enumerate(items))
+    return f'<?xml version="1.0"?>{doctype}<rss version="2.0"><channel><title>x</title>{body}</channel></rss>'
+
+
+BBC_RSS = rss(("Flood warnings across the north", "Wed, 14 Oct 2026 10:00:00 GMT"), ("Talks resume in Geneva", "Tue, 13 Oct 2026 20:00:00 GMT"))
+OLD_RSS = rss(("Top story from 2023", "Mon, 01 May 2023 12:00:00 GMT"))
+
+
 def _ms(delta: timedelta) -> int:
     return int((NOW - delta).timestamp() * 1000)
 
@@ -194,6 +233,11 @@ def feeds() -> dict:
         ],
         "api.water.noaa.gov": lambda request: {"gauges": [dict(g) for g in GAUGES]},
         "services9.arcgis.com": _portwatch,
+        "api.fdic.gov": FDIC,
+        "www.federalregister.gov": FEDREG,
+        "www.spc.noaa.gov": SPC_CSV,
+        "feeds.bbci.co.uk": BBC_RSS,
+        "feeds.npr.org": OLD_RSS,
         "services3.arcgis.com": lambda request: {"features": [dict(f) for f in FIRES]},
         "air-quality-api.open-meteo.com": {"current": {
             "time": "2026-10-14T11:00", "us_aqi": 112, "pm2_5": 41.0, "pm10": 50.0, "ozone": 60.0,
@@ -237,6 +281,8 @@ def make_client(fail: bool = False, data: dict | None = None) -> httpx.AsyncClie
         payload = data.get(request.url.path) or data[request.url.host]
         if callable(payload):
             payload = payload(request)
+        if isinstance(payload, httpx.Response):
+            return payload
         if isinstance(payload, str):
             return httpx.Response(200, text=payload)
         return httpx.Response(200, json=payload)

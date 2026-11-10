@@ -292,6 +292,71 @@ The data lags by a few days, and the summary says what date it runs through. If 
 
 A chokepoint that has been down for months stays active until it recovers or you remove it from `names`.
 
+### `fdic_failures` — Bank failures (panel: Finance)
+
+Failed banks from the FDIC's failure list (`api.fdic.gov`), newest first, with the failure date and the bank's assets. Default interval 6 hours. No key. The list follows FDIC's own publication, which can run a few days behind a failure.
+
+Failures are rare, so most days the panel shows how long it has been since the last one and how many happened in the past year. It goes **active** when a failure falls inside `active_days`.
+
+| Param | Default | Meaning |
+|---|---|---|
+| `active_days` | `14` | A failure this recent turns the panel active. |
+| `window_days` | `365` | The span for the failure count. |
+| `max_items` | `5` | Most failures listed. |
+
+### `federal_register` — Presidential documents (panel: Federal actions)
+
+Recent executive orders from the Federal Register API (`federalregister.gov`), shown as plain headlines, and new national emergency declarations. Default interval 1 hour. No key. Documents reach the Federal Register a few days after they are signed.
+
+It goes **active** only when a *new* national emergency is declared within `active_days`. The annual "Continuation of the National Emergency" notices are routine renewals and are ignored. The emergency test reads the document title ("Declaring…", "Declaration of…" plus "emergency"), so an emergency announced under an unusual title could be missed.
+
+| Param | Default | Meaning |
+|---|---|---|
+| `window_days` | `21` | How far back executive orders are listed. |
+| `active_days` | `7` | A new emergency declaration this recent turns the panel active. |
+| `max_items` | `6` | Most executive orders listed. |
+
+### `spc_storm_reports` — Storm reports (panel: Local)
+
+Preliminary tornado, wind and hail reports from NOAA's Storm Prediction Center, within `radius_km` of your location. Default interval 10 minutes. No key. Reports come from spotters, the public and emergency managers, and are entered by NWS offices. They are **preliminary and unverified**, and an empty list means none were reported to the SPC, not that none occurred. The report day runs 12Z to 12Z.
+
+It goes **active** when a significant report is within `radius_km` and newer than `active_hours`. Significant means any tornado, wind damage or a wind of `min_wind_mph` or more, or hail of `min_hail_in` inches or more. If the file has not been regenerated for `max_file_age_hours`, or its layout changes, the source fails (grey).
+
+| Param | Default | Meaning |
+|---|---|---|
+| `radius_km` | `150` | Reports within this distance are listed. |
+| `active_hours` | `6` | A significant report this recent turns the panel active. |
+| `min_wind_mph` | `58` | Wind speed that counts as significant. |
+| `min_hail_in` | `1.0` | Hail size in inches that counts as significant. |
+| `max_items` | `8` | Most reports listed. |
+| `max_file_age_hours` | `24` | A file not updated for this long is a failure. |
+
+### `rss_headlines` — Headlines (panel: Headlines)
+
+Headlines from RSS or Atom feeds that you choose, from the publishers' own feeds. Default interval 15 minutes. No key. The defaults are BBC World and NPR. Headlines are shown as headlines. They never change any panel's status and never trigger Foghorn, and outlets sometimes get breaking news wrong in the first minutes.
+
+A feed whose newest item is older than `stale_days` is shown as **stale** and its items are left out, because some publishers leave a dead feed answering normally (CNN's top-stories feed, for one, still responds but has not had a new item since 2023). If no feed is current, the source fails (grey). A feed that includes a DTD is refused.
+
+```yaml
+sources:
+  rss_headlines:
+    params:
+      feeds:
+        - name: BBC World
+          url: https://feeds.bbci.co.uk/news/world/rss.xml
+        - name: NPR
+          url: https://feeds.npr.org/1001/rss.xml
+          keywords: [grid, outage, storm]   # optional: keep only items mentioning one of these
+          max_items: 3
+```
+
+| Param | Default | Meaning |
+|---|---|---|
+| `feeds` | BBC World, NPR | List of `name`, `url`, optional `keywords`, optional `max_items` (default 5). |
+| `stale_days` | `3` | A feed older than this is stale. |
+| `max_age_hours` | `48` | Items older than this are dropped. |
+| `max_items` | `12` | Most headlines shown in total. |
+
 ### `cisa_kev` — Known exploited vulnerabilities (panel: Cyber)
 
 Vulnerabilities the US Cybersecurity and Infrastructure Security Agency has confirmed are being exploited. This is a national feed, not tied to your location. Default interval 30 minutes.

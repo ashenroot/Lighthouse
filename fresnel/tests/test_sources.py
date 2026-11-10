@@ -2,7 +2,7 @@ from datetime import timedelta
 
 import pytest
 
-from conftest import make_client, feeds
+from conftest import SPC_CSV, make_client, feeds
 from fresnel.relay import Relay, describe_error
 from fresnel.sources.swpc_kp import g_scale
 import httpx
@@ -364,3 +364,110 @@ async def test_wildfires_none_reported_and_upstream_error(config, clock):
     await r.refresh("nifc_wildfires")
     env = r.envelope("nifc_wildfires")
     assert env["fetch"]["ok"] is False and env["fetch"]["error"] == "upstream query error"
+
+
+@pytest.mark.asyncio
+async def test_fdic_failures_recent_failure_and_quiet_stretch(config, clock):
+    from fresnel.config import SourceCfg
+    r = Relay(config, client=make_client(), now=clock)
+    await r.refresh("fdic_failures")
+    env = r.envelope("fdic_failures")
+    assert env["status"] == "active" and env["summary"] == "Example Bank (TOWN, KS) failed 2026-10-10"
+    assert env["data"]["failures"][0]["assets_usd"] == 50_000_000
+    config.sources["fdic_failures"] = SourceCfg(params={"active_days": 1})
+    r = Relay(config, client=make_client(), now=clock)
+    await r.refresh("fdic_failures")
+    env = r.envelope("fdic_failures")
+    assert env["status"] == "nominal" and env["summary"] == "Last failure 4 days ago: Example Bank (TOWN, KS); 2 in the past 365 days"
+
+
+@pytest.mark.asyncio
+async def test_federal_register_new_emergency_ignores_continuations_and_old_orders(config, clock):
+    from fresnel.config import SourceCfg
+    r = Relay(config, client=make_client(), now=clock)
+    await r.refresh("federal_register")
+    env = r.envelope("federal_register")
+    assert env["status"] == "active"
+    assert env["summary"] == "New national emergency (2026-10-11): Declaring a National Emergency With Respect to Widgets"
+    assert [e["title"] for e in env["data"]["emergencies"]] == ["Declaring a National Emergency With Respect to Widgets"]
+    assert [o["number"] for o in env["data"]["orders"]] == ["14500"]  # the August order is outside the window
+    config.sources["federal_register"] = SourceCfg(params={"active_days": 1})
+    r = Relay(config, client=make_client(), now=clock)
+    await r.refresh("federal_register")
+    env = r.envelope("federal_register")
+    assert env["status"] == "nominal" and env["summary"] == "1 executive order in 21 days; latest 2026-10-12: Improving Widget Policy"
+
+
+@pytest.mark.asyncio
+async def test_storm_reports_rank_tornado_first_and_filter_by_distance(config, clock):
+    from datetime import datetime, timezone
+    clock.t = datetime(2026, 10, 14, 15, 0, tzinfo=timezone.utc)
+    r = Relay(config, client=make_client(), now=clock)
+    await r.refresh("spc_storm_reports")
+    env = r.envelope("spc_storm_reports")
+    d = env["data"]
+    assert env["status"] == "active" and env["summary"].startswith("Tornado report ") and env["summary"].endswith("60 min ago (+1 more)")
+    assert (d["in_range"], d["nationwide"]) == (3, 4)  # the Iowa report is outside the radius
+    assert [x["kind"] for x in d["reports"]] == ["hail", "wind", "tornado"]  # newest first
+    assert d["reports"][1]["comments"] == "Trees down, power lines (EAX)"  # a quoted comma stays in one field
+    assert d["reports"][0]["significant"] is False  # three-quarter inch hail is below the threshold
+    from fresnel.config import SourceCfg
+    config.sources["spc_storm_reports"] = SourceCfg(params={"radius_km": 1})
+    r = Relay(config, client=make_client(), now=clock)
+    await r.refresh("spc_storm_reports")
+    env = r.envelope("spc_storm_reports")
+    assert env["status"] == "nominal" and env["summary"] == "No storm reports within 1 km in this report day"
+
+
+@pytest.mark.asyncio
+async def test_storm_reports_stuck_file_and_changed_format_are_failures(config, clock):
+    import httpx
+    from datetime import datetime, timezone
+    clock.t = datetime(2026, 10, 14, 15, 0, tzinfo=timezone.utc)
+    d = feeds()
+    d["www.spc.noaa.gov"] = httpx.Response(200, text=SPC_CSV, headers={"last-modified": "Sun, 11 Oct 2026 15:00:00 GMT"})
+    r = Relay(config, client=make_client(data=d), now=clock)
+    await r.refresh("spc_storm_reports")
+    assert r.envelope("spc_storm_reports")["fetch"]["error"] == "report file is 72 hours old"
+    d["www.spc.noaa.gov"] = "<html>moved</html>"
+    r = Relay(config, client=make_client(data=d), now=clock)
+    await r.refresh("spc_storm_reports")
+    assert r.envelope("spc_storm_reports")["fetch"]["error"] == "unexpected report file format"
+
+
+@pytest.mark.asyncio
+async def test_rss_headlines_reports_a_stale_feed_instead_of_trusting_it(config, clock):
+    r = Relay(config, client=make_client(), now=clock)
+    await r.refresh("rss_headlines")
+    env = r.envelope("rss_headlines")
+    assert env["status"] == "nominal"
+    assert [h["title"] for h in env["data"]["headlines"]] == ["Flood warnings across the north", "Talks resume in Geneva"]
+    assert env["summary"] == "2 headlines from 1 feed; NPR: stale (newest item 2023-05-01)"
+    assert {f["name"]: f["ok"] for f in env["data"]["feeds"]} == {"BBC World": True, "NPR": False}
+
+
+@pytest.mark.asyncio
+async def test_rss_headlines_keywords_and_all_feeds_dead(config, clock):
+    from fresnel.config import SourceCfg
+    config.sources["rss_headlines"] = SourceCfg(params={"feeds": [
+        {"name": "BBC", "url": "https://feeds.bbci.co.uk/news/world/rss.xml", "keywords": ["flood"]}]})
+    r = Relay(config, client=make_client(), now=clock)
+    await r.refresh("rss_headlines")
+    assert [h["title"] for h in r.envelope("rss_headlines")["data"]["headlines"]] == ["Flood warnings across the north"]
+    config.sources["rss_headlines"] = SourceCfg(params={"feeds": [{"name": "NPR", "url": "https://feeds.npr.org/1001/rss.xml"}]})
+    r = Relay(config, client=make_client(), now=clock)
+    await r.refresh("rss_headlines")
+    env = r.envelope("rss_headlines")
+    assert env["fetch"]["ok"] is False and env["fetch"]["error"] == "no feed is current: NPR stale (newest item 2023-05-01)"
+
+
+@pytest.mark.asyncio
+async def test_rss_headlines_refuses_feeds_with_a_dtd(config, clock):
+    from fresnel.config import SourceCfg
+    from conftest import rss
+    d = feeds()
+    d["feeds.bbci.co.uk"] = rss(("x", "Wed, 14 Oct 2026 10:00:00 GMT"), doctype='<!DOCTYPE r [<!ENTITY a "aaaa">]>')
+    config.sources["rss_headlines"] = SourceCfg(params={"feeds": [{"name": "BBC", "url": "https://feeds.bbci.co.uk/news/world/rss.xml"}]})
+    r = Relay(config, client=make_client(data=d), now=clock)
+    await r.refresh("rss_headlines")
+    assert r.envelope("rss_headlines")["fetch"]["error"] == "no feed is current: BBC feed uses a DTD"
