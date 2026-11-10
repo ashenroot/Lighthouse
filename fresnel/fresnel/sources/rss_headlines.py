@@ -15,6 +15,7 @@ from .base import Result, Source, SourceError
 
 PAGE = "https://www.rssboard.org/rss-specification"
 ATOM = "{http://www.w3.org/2005/Atom}"
+RSS1 = "{http://purl.org/rss/1.0/}"  # RSS 1.0 (RDF) feeds, such as Deutsche Welle's
 DEFAULT_FEEDS = [
     {"name": "BBC World", "url": "https://feeds.bbci.co.uk/news/world/rss.xml"},
     {"name": "NPR", "url": "https://feeds.npr.org/1001/rss.xml"},
@@ -44,6 +45,10 @@ def parse_feed(xml: str) -> list[dict]:
         items.append({"title": (it.findtext("title") or "").strip(), "url": (it.findtext("link") or "").strip(),
                       "time": _when(it.findtext("pubDate") or it.findtext("{http://purl.org/dc/elements/1.1/}date")),
                       "text": _TAGS.sub(" ", it.findtext("description") or "")})
+    for it in root.iter(f"{RSS1}item"):
+        items.append({"title": (it.findtext(f"{RSS1}title") or "").strip(), "url": (it.findtext(f"{RSS1}link") or "").strip(),
+                      "time": _when(it.findtext("{http://purl.org/dc/elements/1.1/}date")),
+                      "text": _TAGS.sub(" ", it.findtext(f"{RSS1}description") or "")})
     for it in root.iter(f"{ATOM}entry"):
         link = next((l.get("href") for l in it.findall(f"{ATOM}link") if l.get("rel") in (None, "alternate")), "")
         items.append({"title": (it.findtext(f"{ATOM}title") or "").strip(), "url": link or "",
@@ -59,8 +64,9 @@ class RssHeadlines(Source):
     page = PAGE
     tier = "fragile"
     default_interval = 900
-    # feeds: a list of {name, url, keywords (optional), max_items (optional)}. keywords keep only items whose title or
-    # summary contains one of them. stale_days: a feed whose newest item is older than this is shown as stale.
+    # feeds: a list of {name, url, keywords, max_items, stale_days, max_age_hours}, the last four optional. keywords keep only
+    # items whose title or summary contains one of them. stale_days: a feed whose newest item is older than this is shown as
+    # stale. A slow feed (a weekly blog, say) can set its own stale_days and max_age_hours.
     default_params = {"feeds": DEFAULT_FEEDS, "stale_days": 3, "max_items": 12, "max_age_hours": 48}
 
     async def _one(self, spec: dict) -> dict:
@@ -80,11 +86,11 @@ class RssHeadlines(Source):
             return {"name": name, "ok": False, "problem": "no dated items", "items": []}
         newest = max(i["time"] for i in dated)
         now = self.ctx.now()
-        if now - newest > timedelta(days=float(self.params["stale_days"])):
+        if now - newest > timedelta(days=float(spec.get("stale_days", self.params["stale_days"]))):
             return {"name": name, "ok": False, "problem": f"stale (newest item {newest.date().isoformat()})", "items": []}
         words = [w.lower() for w in spec.get("keywords") or []]
         keep = [i for i in dated if not words or any(w in (i["title"] + " " + i["text"]).lower() for w in words)]
-        cutoff = now - timedelta(hours=float(self.params["max_age_hours"]))
+        cutoff = now - timedelta(hours=float(spec.get("max_age_hours", self.params["max_age_hours"])))
         keep = [i for i in keep if i["time"] >= cutoff and i["title"]]
         keep.sort(key=lambda i: i["time"], reverse=True)
         out = [{"outlet": name, "title": i["title"][:200], "url": i["url"], "time": i["time"].isoformat()} for i in keep[: int(spec.get("max_items", 5))]]

@@ -471,3 +471,20 @@ async def test_rss_headlines_refuses_feeds_with_a_dtd(config, clock):
     r = Relay(config, client=make_client(data=d), now=clock)
     await r.refresh("rss_headlines")
     assert r.envelope("rss_headlines")["fetch"]["error"] == "no feed is current: BBC feed uses a DTD"
+
+
+@pytest.mark.asyncio
+async def test_rss_headlines_per_feed_limits_and_rss1_feeds(config, clock):
+    from fresnel.config import SourceCfg
+    from fresnel.sources.rss_headlines import parse_feed
+    config.sources["rss_headlines"] = SourceCfg(params={"feeds": [
+        {"name": "Slow", "url": "https://feeds.npr.org/1001/rss.xml", "stale_days": 100000, "max_age_hours": 10_000_000}]})
+    r = Relay(config, client=make_client(), now=clock)
+    await r.refresh("rss_headlines")
+    env = r.envelope("rss_headlines")
+    assert [h["title"] for h in env["data"]["headlines"]] == ["Top story from 2023"]  # a slow feed can keep its own limits
+    rdf = ('<?xml version="1.0"?><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://purl.org/rss/1.0/" '
+           'xmlns:dc="http://purl.org/dc/elements/1.1/"><item><title>Berlin item</title><link>https://example.org/b</link>'
+           '<dc:date>2026-10-14T09:00:00Z</dc:date></item></rdf:RDF>')
+    item = parse_feed(rdf)[0]
+    assert item["title"] == "Berlin item" and item["time"].year == 2026

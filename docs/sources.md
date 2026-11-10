@@ -335,7 +335,7 @@ It goes **active** when a significant report is within `radius_km` and newer tha
 
 Headlines from RSS or Atom feeds that you choose, from the publishers' own feeds. Default interval 15 minutes. No key. The defaults are BBC World and NPR. Headlines are shown as headlines. They never change any panel's status and never trigger Foghorn, and outlets sometimes get breaking news wrong in the first minutes.
 
-A feed whose newest item is older than `stale_days` is shown as **stale** and its items are left out, because some publishers leave a dead feed answering normally (CNN's top-stories feed, for one, still responds but has not had a new item since 2023). If no feed is current, the source fails (grey). A feed that includes a DTD is refused.
+A feed whose newest item is older than `stale_days` is shown as **stale** and its items are left out, because some publishers leave a dead feed answering normally (CNN's top-stories feed, for one, still responds but has not had a new item since 2023). If no feed is current, the source fails (grey). A feed that includes a DTD is refused. RSS 2.0, Atom and RSS 1.0 (RDF) feeds are read.
 
 ```yaml
 sources:
@@ -352,7 +352,7 @@ sources:
 
 | Param | Default | Meaning |
 |---|---|---|
-| `feeds` | BBC World, NPR | List of `name`, `url`, optional `keywords`, optional `max_items` (default 5). |
+| `feeds` | BBC World, NPR | List of `name` and `url`, plus optional `keywords`, `max_items` (default 5), `stale_days` and `max_age_hours`. The last two override the settings below for one feed, which suits a weekly blog. |
 | `stale_days` | `3` | A feed older than this is stale. |
 | `max_age_hours` | `48` | Items older than this are dropped. |
 | `max_items` | `12` | Most headlines shown in total. |
