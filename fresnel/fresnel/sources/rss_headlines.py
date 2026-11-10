@@ -11,6 +11,8 @@ import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 
+import httpx
+
 from .base import Result, Source, SourceError
 
 PAGE = "https://www.rssboard.org/rss-specification"
@@ -79,6 +81,12 @@ class RssHeadlines(Source):
             items = parse_feed(resp.text)
         except SourceError as exc:  # a feed that cannot be parsed safely is one bad feed
             return {"name": name, "ok": False, "problem": str(exc), "items": []}
+        except httpx.HTTPStatusError as exc:
+            return {"name": name, "ok": False, "problem": f"HTTP {exc.response.status_code}", "items": []}
+        except httpx.TimeoutException:
+            return {"name": name, "ok": False, "problem": "timed out", "items": []}
+        except ET.ParseError:
+            return {"name": name, "ok": False, "problem": "not a readable feed", "items": []}
         except Exception:
             return {"name": name, "ok": False, "problem": "fetch failed", "items": []}
         dated = [i for i in items if i["time"]]

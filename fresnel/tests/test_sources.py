@@ -488,3 +488,21 @@ async def test_rss_headlines_per_feed_limits_and_rss1_feeds(config, clock):
            '<dc:date>2026-10-14T09:00:00Z</dc:date></item></rdf:RDF>')
     item = parse_feed(rdf)[0]
     assert item["title"] == "Berlin item" and item["time"].year == 2026
+
+
+@pytest.mark.asyncio
+async def test_rss_headlines_says_why_a_feed_failed(config, clock):
+    import httpx
+    from fresnel.config import SourceCfg
+    d = feeds()
+    d["www.statnews.com"] = httpx.Response(403, text="blocked")
+    d["example.org"] = "this is not xml <<<"
+    config.sources["rss_headlines"] = SourceCfg(params={"feeds": [
+        {"name": "BBC", "url": "https://feeds.bbci.co.uk/news/world/rss.xml"},
+        {"name": "STAT", "url": "https://www.statnews.com/feed/"},
+        {"name": "Page", "url": "https://example.org/feed"}]})
+    r = Relay(config, client=make_client(data=d), now=clock)
+    await r.refresh("rss_headlines")
+    env = r.envelope("rss_headlines")
+    assert {f["name"]: f["problem"] for f in env["data"]["feeds"]} == {"BBC": None, "STAT": "HTTP 403", "Page": "not a readable feed"}
+    assert env["summary"] == "2 headlines from 1 feed; STAT: HTTP 403, Page: not a readable feed"
