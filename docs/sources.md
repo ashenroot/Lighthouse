@@ -94,6 +94,8 @@ Goes **active** only if you give a gauge a flood stage and it reaches it. With n
 | `sites` | `[]` | USGS site numbers to show, as quoted strings. Empty means the nearest gauges. Find numbers at waterdata.usgs.gov. |
 | `radius_deg` | `0.5` | How far, in degrees, to look for gauges when `sites` is empty. |
 | `max_sites` | `4` | How many gauges to show when choosing automatically. |
+| `skip_covered` | `true` | When choosing automatically, leave out any gauge within `cover_km` of one that `river_stages` already lists, so the same river is not shown twice. If `river_stages` is failing, nothing is left out. |
+| `cover_km` | `1.0` | How close counts as the same gauge. |
 | `flood_stage_ft` | `{}` | Flood stage per site, in feet: `{"02204130": 8.0}`. A gauge at or above its stage turns the panel active. |
 
 ```yaml
@@ -117,9 +119,9 @@ Goes **active** when any gauge is at `active_min` or worse, now or in the NWS fo
 | `radius_km` | `50` | Gauges within this distance of your location. |
 | `active_min` | `minor` | `action`, `minor`, `moderate` or `major`: the lowest category that turns the panel active. |
 | `max_age_hours` | `6` | An observation older than this means the gauge is not reporting. |
-| `max_listed` | `8` | Most gauges kept in the data. The board shows the worst few and the nearest. |
+| `max_listed` | `4` | Most gauges listed: the worst first, then the nearest. `usgs_gauges` leaves out any gauge listed here. |
 
-This complements `usgs_gauges`, which reports raw heights and needs flood stages typed in by hand.
+This works with `usgs_gauges`, which reports raw heights for the nearby USGS gauges that this source does not list.
 
 ### `airnow_aqi` — Air quality, measured (panel: Air & fire)
 

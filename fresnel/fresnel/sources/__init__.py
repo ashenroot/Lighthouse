@@ -38,10 +38,12 @@ from .weather_outlooks import SpcOutlook, WpcRainfallOutlook
 
 REGISTRY: dict[str, type[Source]] = {
     cls.id: cls for cls in (
-        NwsAlerts, OpenFema, UsgsQuakes, UsgsGauges, Drought, FaaAirports, AviationWeather, CdcWastewater,
+        NwsAlerts, OpenFema, UsgsQuakes, FaaAirports, AviationWeather, CdcWastewater,
         FdaRecalls, CpscRecalls, CisaKev, SwpcKp, SwpcScales, NhcStorms,
-        OdinOutages, Doe202c, NercAlerts, GridOperators, RiverStages, Chokepoints, AirQuality, NifcWildfires, FdicFailures, FederalRegister, SpcStormReports, RssHeadlines, IodaOutages, AviationForecast, SpcOutlook, WpcRainfallOutlook, EiaFuelPrices,
+        OdinOutages, Doe202c, NercAlerts, GridOperators, Chokepoints, AirQuality, NifcWildfires, FdicFailures, FederalRegister, SpcStormReports, RssHeadlines, IodaOutages, AviationForecast, SpcOutlook, EiaFuelPrices,
     AirNowAqi, EiaGridDemand, CdcHospitalLoad, FdaDrugShortages,
+        # the Water panel reads in this order; river_stages comes before usgs_gauges, which leaves out gauges it already shows
+        WpcRainfallOutlook, RiverStages, UsgsGauges, Drought,
     )
 }
 

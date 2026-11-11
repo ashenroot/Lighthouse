@@ -73,7 +73,7 @@ class Relay:
             raise ValueError(f"unknown sources in config: {sorted(unknown)}; known: {sorted(REGISTRY)}")
 
         self._extra_clients: list[httpx.AsyncClient] = []
-        ctx = Context(client=self.client, location=config.location, now=now, keys=self.key)
+        ctx = Context(client=self.client, location=config.location, now=now, keys=self.key, peer=self.peer_data)
         self._recheck: dict[str, float] = {}
         self.sources = {}
         self.states: dict[str, SourceState] = {}
@@ -120,6 +120,11 @@ class Relay:
     def waiting_for_key(self, sid: str) -> bool:
         src = self.sources[sid]
         return bool(src.key) and self.key(src.key) is None
+
+    def peer_data(self, sid: str) -> dict | None:
+        """Another source's latest data, for a source that wants to avoid repeating it. None unless that source is working."""
+        state = self.states.get(sid)
+        return state.data if state and state.data is not None and state.last_success and not state.consecutive_failures else None
 
     def superseded(self, sid: str) -> bool:
         """True when a keyed source that replaces this one has its key, so showing both would be redundant."""

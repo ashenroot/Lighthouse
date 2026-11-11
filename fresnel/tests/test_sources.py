@@ -643,3 +643,38 @@ async def test_outlook_service_error_is_a_failure_not_a_calm_day(config, clock):
     await r.refresh("spc_outlook")
     env = r.envelope("spc_outlook")
     assert env["status"] == "unknown" and env["fetch"]["error"].startswith("today's outlook unavailable: the outlook service returned an error")
+
+
+def _usgs_site(site, name, lat, lon, value):
+    return {"sourceInfo": {"siteCode": [{"value": site}], "siteName": name, "geoLocation": {"geogLocation": {"latitude": lat, "longitude": lon}}},
+            "variable": {"noDataValue": -999999.0}, "values": [{"value": [{"value": value, "dateTime": "2026-10-14T11:00:00.000-04:00"}]}]}
+
+
+@pytest.mark.asyncio
+async def test_usgs_gauges_leave_out_a_gauge_that_river_stages_already_lists(config, clock):
+    series = [_usgs_site("111", "Missouri River at KC (USGS)", 39.1103, -94.5902, "28.4"), _usgs_site("222", "Other Creek", 39.0, -94.6, "2.5")]
+
+    def usgs(request):  # like the real service, only the asked-for sites come back
+        asked = request.url.params.get("sites")
+        return {"value": {"timeSeries": [t for t in series if not asked or t["sourceInfo"]["siteCode"][0]["value"] in asked.split(",")]}}
+
+    r = Relay(config, client=make_client(data={**feeds(), "waterservices.usgs.gov": usgs}), now=clock)
+    await r.refresh("river_stages")
+    await r.refresh("usgs_gauges")
+    d = r.envelope("usgs_gauges")["data"]
+    assert [g["site"] for g in d["gauges"]] == ["222"] and d["covered"] == 1  # the Kansas City gauge is already under river stages
+    from fresnel.config import SourceCfg
+    config.sources["usgs_gauges"] = SourceCfg(params={"skip_covered": False})
+    r = Relay(config, client=make_client(data={**feeds(), "waterservices.usgs.gov": usgs}), now=clock)
+    await r.refresh("river_stages")
+    await r.refresh("usgs_gauges")
+    assert len(r.envelope("usgs_gauges")["data"]["gauges"]) == 2
+
+
+@pytest.mark.asyncio
+async def test_usgs_gauges_show_everything_while_river_stages_is_not_working(config, clock):
+    usgs = {"value": {"timeSeries": [_usgs_site("111", "Missouri River at KC (USGS)", 39.1103, -94.5902, "28.4")]}}
+    r = Relay(config, client=make_client(data={**feeds(), "waterservices.usgs.gov": usgs, "api.water.noaa.gov": lambda request: httpx.Response(500)}), now=clock)
+    await r.refresh("river_stages")  # fails
+    await r.refresh("usgs_gauges")
+    assert [g["site"] for g in r.envelope("usgs_gauges")["data"]["gauges"]] == ["111"]

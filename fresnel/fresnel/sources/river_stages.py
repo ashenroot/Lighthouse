@@ -36,7 +36,7 @@ class RiverStages(Source):
     # radius_km: gauges within this distance of the home point. active_min: the lowest category that turns the
     # panel active (action | minor | moderate | major), judged on the observed stage and on the NWS forecast.
     # max_age_hours: an observation older than this means the gauge is not reporting.
-    default_params = {"radius_km": 50, "active_min": "minor", "max_age_hours": 6, "max_listed": 8}
+    default_params = {"radius_km": 50, "active_min": "minor", "max_age_hours": 6, "max_listed": 4}
 
     async def fetch(self) -> Result:
         threshold = str(self.params["active_min"]).lower()
@@ -76,7 +76,7 @@ class RiverStages(Source):
             fc_rank = RANK.get(fc_cat, 0) if fc_cat in RANK and fc_cat != "no_flooding" else 0
             gauges.append({
                 "lid": g["lid"], "name": g["name"], "state": (g.get("state") or {}).get("abbreviation"),
-                "distance_km": round(distance, 1),
+                "distance_km": round(distance, 1), "lat": g["latitude"], "lon": g["longitude"],
                 "reporting": reporting, "rated": rated,
                 "observed": {"category": obs_cat if reporting else None, "stage": obs.get("primary") if reporting else None,
                              "unit": obs.get("primaryUnit"), "time": obs.get("validTime") if reporting else None},

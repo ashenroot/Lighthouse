@@ -125,7 +125,7 @@
         moderate: "moderate flooding", major: "major flooding", not_defined: "no flood stage set" };
       const RANK = { action: 1, minor: 2, moderate: 3, major: 4 };
       const floor = RANK[d.active_min] || 2;
-      const rows = d.gauges.slice(0, 4).map((g) => {
+      const rows = d.gauges.map((g) => {
         if (!g.reporting) return row(clip(g.name, 40), "Not reporting", { url: g.url, tone: "unknown" });
         const bits = [WORDS[g.observed.category] || g.observed.category];
         if (g.observed.stage != null && g.observed.stage > -900) bits.push(`${g.observed.stage} ${g.observed.unit || "ft"}`);

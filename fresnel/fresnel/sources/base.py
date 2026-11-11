@@ -28,6 +28,7 @@ class Context:
     location: Location
     now: Callable[[], datetime]
     keys: Callable[[str], str | None] = lambda name: None  # name -> the key, read fresh each time
+    peer: Callable[[str], dict | None] = lambda sid: None  # source id -> its data, only while that source's last fetch worked
 
 
 @dataclass
