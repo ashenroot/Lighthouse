@@ -13,8 +13,8 @@ Lighthouse is meant to run on a small server you control. This page says what le
 | `waterservices.usgs.gov` | Stream gauges | A box around your exact coordinates |
 | `www.fema.gov` | Disaster declarations | Your county code |
 | `usdmdataservices.unl.edu` | Drought | Your county code |
-| `data.cdc.gov` | Wastewater | Your state |
-| `api.fda.gov` | FDA recalls | Your state, in the filter |
+| `data.cdc.gov` | Wastewater, hospital load | Your state |
+| `api.fda.gov` | FDA recalls, drug shortages | Your state, in the recall filter; the shortage request sends nothing about you |
 | `www.saferproducts.gov` | CPSC recalls | Nothing about you |
 | `nasstatus.faa.gov` | Airport status | Nothing about you (the airport list is applied locally) |
 | `aviationweather.gov` | Airport weather | The airport codes you list |
@@ -22,6 +22,18 @@ Lighthouse is meant to run on a small server you control. This page says what le
 | `www.cisa.gov` | Known exploited vulnerabilities | Nothing about you |
 | `ornl.opendatasoft.com` | Power outages (ODIN) | Your state's FIPS prefix and county code, as a filter |
 | `www.energy.gov`, `www.nerc.com` | DOE emergency orders, NERC alerts | Nothing about you |
+| `api.water.noaa.gov` | River flood stages | A box around your exact coordinates |
+| `mapservices.weather.noaa.gov` | SPC severe storm and WPC flash flood outlooks | Your exact coordinates |
+| `www.spc.noaa.gov` | SPC storm reports | Nothing about you (distance is worked out locally) |
+| `air-quality-api.open-meteo.com` | Modeled air quality | Your exact coordinates |
+| `www.airnowapi.org` | Measured air quality (needs the `airnow` key) | Your exact coordinates, and your AirNow key |
+| `services3.arcgis.com` | NIFC wildfires | A box around your exact coordinates |
+| `services9.arcgis.com` | Shipping chokepoints (IMF PortWatch) | Nothing about you |
+| `api.eia.gov` | Fuel prices and grid demand (need the `eia` key) | Your EIA key, your state's price region and your balancing authority code |
+| `api.ioda.inetintel.cc.gatech.edu` | Internet outages | The countries you list |
+| `aviationweather.gov` | Airport forecasts (TAF), with the weather above | The airport codes you list |
+| `api.fdic.gov`, `www.federalregister.gov` | Bank failures, presidential documents | Nothing about you |
+| The RSS feeds you list | Headlines | Nothing about you |
 
 Every request also carries the IP address of your server, as any web request does. The installer, and `fresnel init`, send your coordinates once to `geo.fcc.gov` to look up your state and county.
 
