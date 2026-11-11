@@ -125,6 +125,3 @@ a.row:hover{background:#1b252c}
 .setup-t{color:var(--strong);flex:0 1 240px}
 .setup-row code{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:12px;color:var(--accent);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:2px 8px}
 
-.fold{margin-top:6px}
-.fold summary{cursor:pointer;color:var(--muted);font-size:12px;letter-spacing:.04em;padding:6px 0}
-.fold[open] summary{margin-bottom:2px}

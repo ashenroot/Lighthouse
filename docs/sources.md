@@ -282,7 +282,7 @@ Goes **active** when a watched drug is on the list with a product unavailable or
 
 | Param | Default | Meaning |
 |---|---|---|
-| `list` | `all` | `all` includes every drug on the shortage list, most severe first, in a fold on the board; `none` leaves it out. |
+| `list` | `all` | `all` includes every drug on the shortage list, shown on the board as comma-separated lists of unavailable, limited and available drugs; `none` leaves it out. |
 | `watch` | `[]` | Drug names to track; any part of the generic name, any case. |
 | `new_days` | `30` | Window for "newly listed". |
 | `new_active` | `2` | Newly listed drugs in that window that turn the panel active. |

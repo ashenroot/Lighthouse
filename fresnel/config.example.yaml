@@ -135,7 +135,7 @@ sources:
       min_patients: 50                  # ...with at least this many in hospital now
   fda_drug_shortages:
     params:
-      list: all                         # all lists every drug on the shortage list (folded on the board); none leaves it out
+      list: all                         # all lists every drug on the shortage list; none leaves it out
       watch: []                         # drug names to track, any part of the name: ["amoxicillin", "insulin"]
       new_days: 30                      # newly listed within this many days...
       new_active: 2                     # ...this many drugs turns the panel active
