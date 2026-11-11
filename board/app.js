@@ -88,7 +88,9 @@
     return url ? h("a", { class: cls, href: url, target: "_blank", rel: "noopener" }, kids) : h("div", { class: cls }, kids);
   }
 
-  const outlookRows = (e, d, label) => d.days.map((day) => {
+  const outlookRows = (e, d, label) => d.days.every((day) => !day.unchecked && !day.category)
+    ? [row(label, `No risk area · next ${d.days.length} days`, { url: e.source_url, tone: "ok" })]
+    : d.days.map((day) => {
     const name = `${label} · ${day.when}`;
     if (day.unchecked) return row(name, "Not available", { url: e.source_url, tone: "unknown" });
     if (!day.category) return row(name, "No risk area", { url: e.source_url, tone: "ok" });
