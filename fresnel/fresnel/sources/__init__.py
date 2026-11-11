@@ -11,6 +11,7 @@ from .cisa_kev import CisaKev
 from .doe_202c import Doe202c
 from .airnow_aqi import AirNowAqi
 from .cdc_hospital_load import CdcHospitalLoad
+from .fda_drug_shortages import FdaDrugShortages
 from .eia_fuel_prices import EiaFuelPrices
 from .eia_grid_demand import EiaGridDemand
 from .fdic_failures import FdicFailures
@@ -40,7 +41,7 @@ REGISTRY: dict[str, type[Source]] = {
         NwsAlerts, OpenFema, UsgsQuakes, UsgsGauges, Drought, FaaAirports, AviationWeather, CdcWastewater,
         FdaRecalls, CpscRecalls, CisaKev, SwpcKp, SwpcScales, NhcStorms,
         OdinOutages, Doe202c, NercAlerts, GridOperators, RiverStages, Chokepoints, AirQuality, NifcWildfires, FdicFailures, FederalRegister, SpcStormReports, RssHeadlines, IodaOutages, AviationForecast, SpcOutlook, WpcRainfallOutlook, EiaFuelPrices,
-    AirNowAqi, EiaGridDemand, CdcHospitalLoad,
+    AirNowAqi, EiaGridDemand, CdcHospitalLoad, FdaDrugShortages,
     )
 }
 

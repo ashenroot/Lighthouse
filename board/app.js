@@ -262,6 +262,16 @@
         : row(p.pathogen, `${p.patients.toLocaleString()} in hospital` + (p.change_pct == null ? "" : ` · ${p.change_pct >= 0 ? "+" : ""}${p.change_pct.toFixed(0)}% in ${d.weeks} wk`), { url: e.source_url, tone: p.rising ? "active" : null })));
       return rows.concat([row("Week ending", d.week_end, { url: e.source_url })]);
     },
+    fda_drug_shortages(e, d) {
+      const tone = (a) => (a === "Unavailable" ? "active" : a === "Limited Availability" ? "active" : "ok");
+      const rows = [row("On shortage list", `${d.total} drugs · ${d.counts.Unavailable} with an unavailable product · ${d.counts["Limited Availability"]} limited`, { url: e.source_url })];
+      d.watch.forEach((w) => rows.push(!w.listed
+        ? row(`Watching ${w.term}`, "Not on the shortage list", { url: e.source_url, tone: "ok" })
+        : row(`Watching ${w.term}`, clip(w.matches.map((m) => `${m.name}: ${m.availability.toLowerCase()}`).join("; "), 90), { url: e.source_url, tone: tone(w.matches[0].availability) })));
+      if (!d.new_total) rows.push(row(`New in ${d.new_days} days`, "None", { url: e.source_url }));
+      d.new.forEach((m) => rows.push(row(`New ${m.posted}`, clip(`${m.name} · ${m.availability.toLowerCase()}`, 80), { url: e.source_url, tone: d.new_active ? "active" : null })));
+      return rows;
+    },
     cdc_wastewater(e, d) {
       const names = Object.keys(d.pathogens);
       return names.map((n) =>

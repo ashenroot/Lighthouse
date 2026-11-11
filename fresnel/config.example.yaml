@@ -133,6 +133,11 @@ sources:
       icu_pct: 85                       # the same for ICU beds
       rise_pct: 50                      # COVID, flu or RSV hospital patients up this much over `weeks`...
       min_patients: 50                  # ...with at least this many in hospital now
+  fda_drug_shortages:
+    params:
+      watch: []                         # drug names to track, any part of the name: ["amoxicillin", "insulin"]
+      new_days: 30                      # newly listed within this many days...
+      new_active: 2                     # ...this many drugs turns the panel active
   cdc_wastewater:
     params:
       active_share: 0.5               # share of state sites at High or above that triggers active

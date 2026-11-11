@@ -221,6 +221,20 @@ def _cdc_hospital(request):
     return rows[:int(request.url.params.get("$limit", 6))]
 
 
+def _fda_shortages(request):
+    """Mock openFDA drug shortages: one record per presentation, dates as MM/DD/YYYY, paged by skip and limit."""
+    def rec(name, avail, posted, category="Anesthesia"):
+        return {"generic_name": name, "availability": avail, "initial_posting_date": posted, "status": "Current",
+                "therapeutic_category": [category], "shortage_reason": "Demand increase", "update_date": "10/12/2026"}
+    rows = [rec("Ifosfamide Injection", "Unavailable", "09/20/2026", "Oncology"), rec("Ifosfamide Injection", "Limited Availability", "06/12/2026", "Oncology"),
+            rec("Ifosfamide Injection", "Available", "06/12/2026", "Oncology"), rec("Carboplatin Injection", "Available", "04/28/2023", "Oncology"),
+            rec("Carboplatin Injection", "Available", "04/28/2023", "Oncology"), rec("Lisdexamfetamine Dimesylate Capsule", "Limited Availability", "07/14/2023", "Psychiatry"),
+            rec("Lisdexamfetamine Dimesylate Capsule", "Limited Availability", "07/14/2023", "Psychiatry"), rec("Amoxicillin Oral Suspension", "Unvailable", "10/05/2026", "Infectious Disease")]
+    q = request.url.params
+    skip, limit = int(q.get("skip", 0)), int(q.get("limit", 100))
+    return {"meta": {"last_updated": "2026-10-13", "results": {"skip": skip, "limit": limit, "total": len(rows)}}, "results": rows[skip:skip + limit]}
+
+
 def _ms(delta: timedelta) -> int:
     return int((NOW - delta).timestamp() * 1000)
 
@@ -318,6 +332,7 @@ def feeds() -> dict:
              "values": [{"value": []}]},
         ]}},
         "/resource/ua7e-t2fy.json": _cdc_hospital,
+        "/drug/shortages.json": _fda_shortages,
         "data.cdc.gov": [
             {"state_territory": "Georgia", "week_end": "2026-10-03T00:00:00.000", "pathogen_target": "SARS-CoV-2", "site_wval_category": "High"},
             {"state_territory": "Georgia", "week_end": "2026-10-03T00:00:00.000", "pathogen_target": "SARS-CoV-2", "site_wval_category": "Very High"},

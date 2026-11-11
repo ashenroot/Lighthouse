@@ -274,6 +274,20 @@ Goes **active** when inpatient or ICU occupancy reaches its threshold, or when a
 | `min_patients` | `50` | Patients in hospital now, so a small count cannot trip the rise rule. |
 | `max_age_days` | `21` | Age at which the data counts as failed. |
 
+### `fda_drug_shortages` — Drug shortages (panel: Health)
+
+Current US drug shortages from the FDA's shortage database (openFDA). The database lists one record per product presentation, so records are grouped by generic drug name. The panel shows how many drugs are on the list, how many have a product unavailable or limited, which drugs were newly listed recently, and the status of every drug on your `watch` list (including "not on the shortage list", so a quiet watch is visible). Default interval 6 hours. openFDA marks this data as unvalidated; it is situational awareness, not medical guidance.
+
+Goes **active** when a watched drug is on the list with a product unavailable or limited, or when at least `new_active` drugs were newly listed (a new drug, or a new product of a listed one) within `new_days` days. Fails visibly when the database was last updated more than `max_age_days` ago or returns nothing.
+
+| Param | Default | Meaning |
+|---|---|---|
+| `watch` | `[]` | Drug names to track; any part of the generic name, any case. |
+| `new_days` | `30` | Window for "newly listed". |
+| `new_active` | `2` | Newly listed drugs in that window that turn the panel active. |
+| `max_age_days` | `14` | Age of the database at which it counts as failed. |
+| `max_listed` | `6` | Most rows listed per section. |
+
 ### `cdc_wastewater` — Wastewater (panel: Health)
 
 Viral activity in your state's wastewater, from the CDC: SARS-CoV-2, influenza A and RSV. The data updates weekly, so the default interval is 6 hours.
