@@ -83,7 +83,7 @@ The board itself is described in [`board/README.md`](board/README.md).
 | Finance | FDIC bank failures | a bank failure in the last 14 days |
 | Federal actions | Federal Register presidential documents | a new national emergency declaration |
 | Headlines | RSS feeds you choose (BBC and NPR by default) | never active; a stale feed shows as stale |
-| Global context | IODA internet outages (Georgia Tech) | a watched country has an internet outage event still running |
+| Internet outages | IODA internet outages (Georgia Tech) | a watched country has an internet outage event still running |
 | Supply chain | IMF PortWatch shipping chokepoints | a major chokepoint's weekly traffic far below its 90-day or one-year norm |
 | Space | NOAA planetary K-index and scales | a geomagnetic storm of G1 or more, a radio blackout of R2 or more, a radiation storm of S1 or more |
 | Tropical | National Hurricane Center | a storm in the basin you watch |

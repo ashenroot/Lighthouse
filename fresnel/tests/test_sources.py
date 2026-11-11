@@ -528,6 +528,10 @@ async def test_ioda_outages_running_event_is_active_and_a_failed_country_is_name
     data = env["data"]
     assert data["ongoing"] == 1 and data["unchecked"] == ["TW"]
     assert [e["code"] for e in data["events"]] == ["UA", "RU"] and data["events"][1]["ongoing"] is False
+    states = {c["code"]: c["state"] for c in data["countries"]}
+    assert [c["code"] for c in data["countries"]] == ["UA", "RU", "IR", "IL", "TW", "VE"]
+    assert states == {"UA": "outage", "RU": "ended", "IR": "clear", "IL": "clear", "TW": "unchecked", "VE": "clear"}
+    assert data["countries"][1]["ended_ago_s"] == 18000 and data["countries"][2]["name"] == "Iran"
 
 
 @pytest.mark.asyncio

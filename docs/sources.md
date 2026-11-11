@@ -272,11 +272,11 @@ sources:
         - {name: "Georgia Power outages", url: "https://outagemap.georgiapower.com"}
 ```
 
-### `ioda_outages` — Internet outages (panel: Global context)
+### `ioda_outages` — Internet outages (panel: Internet outages)
 
 Country-level internet outage events from IODA, Georgia Tech's Internet Outage Detection and Analysis, which combines BGP routing, active probing, a network telescope and Google traffic. You choose the countries to watch; the defaults are Ukraine, Russia, Iran, Israel, Taiwan and Venezuela. Default interval 30 minutes. No key.
 
-A watched country with an event still running (its end within `ongoing_slack_min` of now) and lasting at least `min_minutes` goes **active**. Each row shows whether the event is running, how long it has lasted, and which measurement saw it. Scores have no fixed scale, so they are not shown or rated. Duration matters: an event lasting many days is usually a chronic condition (a blocked service, for example), while a new event in a normally steady country is the signal. A country that could not be checked is named in the summary. If none can be checked, or IODA returns an error, the source fails (grey), never calm.
+A watched country with an event still running (its end within `ongoing_slack_min` of now) and lasting at least `min_minutes` goes **active**. Every watched country gets a row, including those with no outage, so the panel always shows what is being watched: "No outage", "Outage running 3 h" with the measurement that saw it, "Outage ended 5 h ago", or "Not checked" when IODA did not answer for it. Scores have no fixed scale, so they are not shown or rated. Duration matters: an event lasting many days is usually a chronic condition (a blocked service, for example), while a new event in a normally steady country is the signal. A country that could not be checked is named in the summary. If none can be checked, or IODA returns an error, the source fails (grey), never calm.
 
 | Param | Default | Meaning |
 |---|---|---|

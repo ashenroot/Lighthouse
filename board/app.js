@@ -12,7 +12,7 @@
   const TITLES = {
     brief: "Keeper's Log", local: "Local", environment: "Environment", transport: "Transport", grid: "Power grid", supply: "Supply chain", finance: "Finance", federal: "Federal actions", headlines: "Headlines",
     space: "Space weather", tropical: "Tropical", cyber: "Cyber", health: "Health",
-    recalls: "Recalls", geo: "Global context",
+    recalls: "Recalls", geo: "Internet outages",
   };
   const DEFAULT_ORDER = ["brief", "local", "environment", "transport", "grid", "supply", "finance", "federal", "space", "tropical", "cyber", "health", "recalls", "geo", "headlines"];
   const STATE_TEXT = { nominal: "● NOMINAL", active: "▲ ACTIVE", unknown: "? UNKNOWN", info: "ℹ INFO" };
@@ -131,13 +131,15 @@
       return rows;
     },
     ioda_outages(e, d) {
-      if (!d.events.length) return [row("Internet outages", e.summary, { url: e.source_url })];
       const span = (s) => { const m = Math.floor(s / 60); return m < 90 ? `${m} min` : m < 2880 ? `${Math.floor(m / 60)} h` : `${Math.floor(m / 1440)} days`; };
-      const rows = d.events.map((ev) => row(ev.country,
-        `${ev.ongoing ? "running " : "ended · lasted "}${span(ev.duration_s)} · ${ev.source}`,
-        { url: e.source_url, tone: ev.active ? "active" : null }));
-      if (d.unchecked.length) rows.push(row("Not checked", d.unchecked.join(", "), { url: e.source_url, tone: "unknown" }));
-      return rows;
+      return d.countries.map((c) => {
+        const more = c.more ? ` (+${c.more} more)` : "";
+        if (c.state === "clear") return row(c.name, "No outage", { url: e.source_url, tone: "ok" });
+        if (c.state === "unchecked") return row(c.name, "Not checked", { url: e.source_url, tone: "unknown" });
+        if (c.state === "ended") return row(c.name, `Outage ended ${span(c.ended_ago_s)} ago (lasted ${span(c.duration_s)})${more}`, { url: e.source_url });
+        const brief = c.state === "running" ? " (under the alert minimum)" : "";
+        return row(c.name, `Outage running ${span(c.duration_s)} · ${c.source}${brief}${more}`, { url: e.source_url, tone: c.state === "outage" ? "active" : null });
+      });
     },
     air_quality(e, d) {
       const rows = [row("US AQI (modeled)", `${d.aqi} · ${d.category}`,

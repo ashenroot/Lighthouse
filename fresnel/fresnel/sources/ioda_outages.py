@@ -19,6 +19,13 @@ API = "https://api.ioda.inetintel.cc.gatech.edu/v2/outages/events"
 PAGE = "https://ioda.inetintel.cc.gatech.edu/"
 DEFAULT_COUNTRIES = ["UA", "RU", "IR", "IL", "TW", "VE"]
 DATASOURCES = {"bgp": "BGP routing", "ping-slash24": "active probing", "merit-nt": "network telescope", "gtr": "Google traffic"}
+NAMES = {
+    "UA": "Ukraine", "RU": "Russia", "IR": "Iran", "IL": "Israel", "TW": "Taiwan", "VE": "Venezuela", "CN": "China", "KP": "North Korea",
+    "BY": "Belarus", "SY": "Syria", "IQ": "Iraq", "LB": "Lebanon", "YE": "Yemen", "SA": "Saudi Arabia", "AE": "United Arab Emirates",
+    "QA": "Qatar", "TR": "Turkey", "EG": "Egypt", "PK": "Pakistan", "IN": "India", "AF": "Afghanistan", "KR": "South Korea",
+    "JP": "Japan", "PH": "Philippines", "CU": "Cuba", "MX": "Mexico", "CA": "Canada", "US": "United States", "SD": "Sudan",
+    "ET": "Ethiopia", "LY": "Libya", "MM": "Myanmar", "KZ": "Kazakhstan", "PS": "Palestine", "JO": "Jordan", "GB": "United Kingdom",
+}
 
 
 def _span(seconds: float) -> str:
@@ -94,6 +101,20 @@ class IodaOutages(Source):
         events.sort(key=lambda ev: (not ev["ongoing"], -ev["score"]))
         current.sort(key=lambda ev: -ev["score"])
 
+        by_country = []
+        for code in codes:
+            if code in unchecked:
+                by_country.append({"code": code, "name": NAMES.get(code, code), "state": "unchecked"})
+                continue
+            mine = sorted((ev for ev in events if ev["code"] == code), key=lambda ev: (not ev["active"], not ev["ongoing"], -ev["score"]))
+            if not mine:
+                by_country.append({"code": code, "name": NAMES.get(code, code), "state": "clear"})
+                continue
+            top = mine[0]
+            state = "outage" if top["active"] else "running" if top["ongoing"] else "ended"
+            by_country.append({"code": code, "name": top["country"], "state": state, "duration_s": top["duration_s"],
+                               "ended_ago_s": max(0, end - top["end_ts"]), "source": top["source"], "more": len(mine) - 1})
+
         if current:
             top = current[0]
             summary = f"{top['country']}: outage running {_span(top['duration_s'])} ({top['source']})" + (
@@ -105,7 +126,7 @@ class IodaOutages(Source):
         if unchecked:
             summary += f"; {', '.join(unchecked)} not checked"
         return Result(
-            data={"events": events[: int(self.params["max_listed"])], "watched": codes, "unchecked": unchecked,
+            data={"countries": by_country, "events": events[: int(self.params["max_listed"])], "watched": codes, "unchecked": unchecked,
                   "window_hours": float(self.params["window_hours"]), "ongoing": len(current)},
             summary=summary, status="active" if current else "nominal", source_url=PAGE,
         )
