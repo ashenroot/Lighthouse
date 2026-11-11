@@ -601,3 +601,45 @@ async def test_aviation_forecast_category_rules_and_no_forecast_is_a_failure(con
     await r.refresh("aviation_forecast")
     env = r.envelope("aviation_forecast")
     assert env["status"] == "unknown" and env["fetch"]["error"] == "unexpected response format"
+
+
+@pytest.mark.asyncio
+async def test_spc_outlook_threshold_and_days_without_risk(config, clock):
+    from fresnel.config import SourceCfg
+    r = Relay(config, client=make_client(), now=clock)
+    await r.refresh("spc_outlook")
+    env = r.envelope("spc_outlook")
+    assert env["status"] == "nominal"
+    assert env["summary"] == "No severe-storm risk at or above enh (today: slight; tomorrow: none; in 3 days: none)"
+    assert [d["category"] for d in env["data"]["days"]] == ["slight", None, None]
+    config.sources["spc_outlook"] = SourceCfg(params={"active_min": "slgt", "days": 2})
+    r = Relay(config, client=make_client(), now=clock)
+    await r.refresh("spc_outlook")
+    env = r.envelope("spc_outlook")
+    assert env["status"] == "active" and env["summary"] == "Slight risk of severe storms today" and len(env["data"]["days"]) == 2
+    config.sources["spc_outlook"] = SourceCfg(params={"active_min": "severe"})
+    r = Relay(config, client=make_client(), now=clock)
+    await r.refresh("spc_outlook")
+    assert r.envelope("spc_outlook")["fetch"]["error"].startswith("active_min must be one of mrgl")
+
+
+@pytest.mark.asyncio
+async def test_wpc_rainfall_outlook_active_and_expired_products_fail(config, clock):
+    r = Relay(config, client=make_client(), now=clock)
+    await r.refresh("wpc_rainfall_outlook")
+    env = r.envelope("wpc_rainfall_outlook")
+    assert env["status"] == "active" and env["summary"] == "Moderate risk of flash flooding today"
+    assert [d["category"] for d in env["data"]["days"]] == ["moderate", None, None]
+    clock.t = clock.t + timedelta(days=3)  # every product has expired
+    await r.refresh("wpc_rainfall_outlook")
+    env = r.envelope("wpc_rainfall_outlook")
+    assert env["fetch"]["ok"] is False and env["fetch"]["error"].startswith("today's outlook unavailable: expired 48 h ago")
+
+
+@pytest.mark.asyncio
+async def test_outlook_service_error_is_a_failure_not_a_calm_day(config, clock):
+    bad = lambda request: {"error": {"code": 500, "message": "boom"}}
+    r = Relay(config, client=make_client(data={**feeds(), "mapservices.weather.noaa.gov": bad}), now=clock)
+    await r.refresh("spc_outlook")
+    env = r.envelope("spc_outlook")
+    assert env["status"] == "unknown" and env["fetch"]["error"].startswith("today's outlook unavailable: the outlook service returned an error")

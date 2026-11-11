@@ -135,6 +135,23 @@ def _taf(request):
     return [mci, atl]
 
 
+def _outlooks(request):
+    """Mock NOAA mapservices outlooks. A request with a geometry is the point lookup; without one it lists every area."""
+    path, point = request.url.path, "geometry" in request.url.params
+    spc = lambda label, valid, expire: {"attributes": {"label": label, "valid": valid, "expire": expire, "dn": 1}}
+    wpc = lambda outlook, a, b: {"attributes": {"outlook": outlook, "start_time": a, "end_time": b}}
+    if "SPC_wx_outlks" in path:
+        today = [spc("TSTM", "202610140100", "202610151200"), spc("MRGL", "202610140100", "202610151200"), spc("SLGT", "202610140100", "202610151200")]
+        feats = {"/1/": (today, today), "/9/": ([spc("TSTM", "202610151200", "202610161200")], []), "/17/": ([], [])}
+    else:
+        day1 = [wpc("Marginal (At Least 5%)", "2026-10-14 10:00:00", "2026-10-15 12:00:00"), wpc("Moderate (At Least 40%)", "2026-10-14 10:00:00", "2026-10-15 12:00:00")]
+        feats = {"/0/": (day1, [day1[1]]), "/1/": ([wpc("Marginal (At Least 5%)", "2026-10-15 12:00:00", "2026-10-16 12:00:00")], []), "/2/": ([], [])}
+    for key, (everything, here) in feats.items():
+        if f"MapServer{key}query" in path:
+            return {"features": here if point else everything}
+    raise AssertionError(path)
+
+
 def _ms(delta: timedelta) -> int:
     return int((NOW - delta).timestamp() * 1000)
 
@@ -263,6 +280,7 @@ def feeds() -> dict:
             {"icaoId": "KATL", "name": "Atlanta, GA, US", "obsTime": int(NOW.timestamp()) - 3 * 3600 - 60, "fltCat": "VFR", "visib": "10+", "clouds": []},
         ],
         "/api/data/taf": _taf,
+        "mapservices.weather.noaa.gov": _outlooks,
         "api.water.noaa.gov": lambda request: {"gauges": [dict(g) for g in GAUGES]},
         "services9.arcgis.com": _portwatch,
         "api.fdic.gov": FDIC,

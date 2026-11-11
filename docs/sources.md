@@ -186,6 +186,28 @@ Goes **active** when an airport is at `active_min` or worse. The default, IFR, i
 | `active_min` | `IFR` | `MVFR`, `IFR` or `LIFR`: the category at which the airport counts as active. |
 | `max_age_minutes` | `180` | Reports older than this are ignored. |
 
+### `spc_outlook` — Severe storm outlook (panel: Local)
+
+The Storm Prediction Center's categorical convective outlook for your location, for today, tomorrow and the day after (`days`, 1 to 3). It comes ahead of watches and warnings, so it is the first sign that severe storms are coming. The categories run from general thunderstorms through marginal, slight, enhanced and moderate to high. Default interval 30 minutes. No key.
+
+Goes **active** when any day reaches `active_min` (default `enh`, enhanced; `slgt` is routine in storm season). Each day shows as a row: its category, or "No risk area" when the forecasters outlined none at your point. Each day is also checked against the service's own valid and expire times. If today's outlook has expired or cannot be read, the source fails (grey), never calm. A later day that cannot be read shows "Not available" and is named in the summary. One limit: a layer with no areas at all is reported as no risk, which is what SPC publishes on a quiet day, but an empty layer caused by a broken upstream feed would look the same.
+
+| Param | Default | Meaning |
+|---|---|---|
+| `active_min` | `enh` | `mrgl`, `slgt`, `enh`, `mdt` or `high`. |
+| `days` | `3` | How many days ahead to show, 1 to 3. |
+
+### `wpc_rainfall_outlook` — Flash flood outlook (panel: Environment)
+
+The Weather Prediction Center's Excessive Rainfall Outlook for your location: the chance that rainfall exceeds flash flood guidance within 25 miles of a point. The categories are marginal (at least 5%), slight (15%), moderate (40%) and high (70%). It sits next to river stages, so the panel says both what rain is forecast and what the rivers are doing. Default interval 30 minutes. No key.
+
+Goes **active** when any day reaches `active_min` (default `moderate`). It is checked and fails the same way as `spc_outlook`.
+
+| Param | Default | Meaning |
+|---|---|---|
+| `active_min` | `moderate` | `marginal`, `slight`, `moderate` or `high`. |
+| `days` | `3` | How many days ahead to show, 1 to 3. |
+
 ### `aviation_forecast` — Airport forecast (panel: Transport)
 
 The TAF (terminal aerodrome forecast) at your airports, from the Aviation Weather Center. Where `aviation_weather` shows the conditions now, this shows what the airport's forecasters expect over the next `hours`, so a fog or low-cloud forecast shows up before it arrives. Default interval 30 minutes. **Off until airports are set**, and it uses the same list as `faa_airports` unless you give it its own.

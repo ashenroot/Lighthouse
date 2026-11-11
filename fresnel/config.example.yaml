@@ -62,6 +62,14 @@ sources:
     params:
       # airports: [MCI]               # defaults to the faa_airports list above
       active_min: IFR                 # MVFR | IFR | LIFR: category that turns the panel active
+  spc_outlook:
+    params:
+      active_min: enh                 # mrgl | slgt | enh | mdt | high: lowest severe-storm category that turns the panel active
+      days: 3                         # 1 to 3
+  wpc_rainfall_outlook:
+    params:
+      active_min: moderate            # marginal | slight | moderate | high: lowest flash-flood category that turns the panel active
+      days: 3
   aviation_forecast:
     params:
       # airports: [MCI]               # defaults to the faa_airports list above

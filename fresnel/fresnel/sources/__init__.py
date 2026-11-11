@@ -29,12 +29,13 @@ from .swpc_kp import SwpcKp
 from .swpc_scales import SwpcScales
 from .usgs_gauges import UsgsGauges
 from .usgs_quakes import UsgsQuakes
+from .weather_outlooks import SpcOutlook, WpcRainfallOutlook
 
 REGISTRY: dict[str, type[Source]] = {
     cls.id: cls for cls in (
         NwsAlerts, OpenFema, UsgsQuakes, UsgsGauges, Drought, FaaAirports, AviationWeather, CdcWastewater,
         FdaRecalls, CpscRecalls, CisaKev, SwpcKp, SwpcScales, NhcStorms,
-        OdinOutages, Doe202c, NercAlerts, GridOperators, RiverStages, Chokepoints, AirQuality, NifcWildfires, FdicFailures, FederalRegister, SpcStormReports, RssHeadlines, IodaOutages, AviationForecast,
+        OdinOutages, Doe202c, NercAlerts, GridOperators, RiverStages, Chokepoints, AirQuality, NifcWildfires, FdicFailures, FederalRegister, SpcStormReports, RssHeadlines, IodaOutages, AviationForecast, SpcOutlook, WpcRainfallOutlook,
     )
 }
 

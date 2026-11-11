@@ -79,6 +79,14 @@
     return url ? h("a", { class: cls, href: url, target: "_blank", rel: "noopener" }, kids) : h("div", { class: cls }, kids);
   }
 
+  const outlookRows = (e, d, label) => d.days.map((day) => {
+    const name = `${label} · ${day.when}`;
+    if (day.unchecked) return row(name, "Not available", { url: e.source_url, tone: "unknown" });
+    if (!day.category) return row(name, "No risk area", { url: e.source_url, tone: "ok" });
+    const text = day.category.charAt(0).toUpperCase() + day.category.slice(1);
+    return row(name, day.rank ? `${text} risk` : text, { url: e.source_url, tone: day.active ? "active" : null });
+  });
+
   const RENDER = {
     nws_alerts(e, d) {
       if (!d.alerts.length) return [row("NWS alerts", "None active", { url: e.source_url, tone: "ok" })];
@@ -207,6 +215,8 @@
         return row(a.airport, parts.join(" · "), { url: e.source_url, tone: a.active ? "active" : a.category === "VFR" ? "ok" : null });
       });
     },
+    spc_outlook(e, d) { return outlookRows(e, d, "Severe storms"); },
+    wpc_rainfall_outlook(e, d) { return outlookRows(e, d, "Flash flooding"); },
     aviation_forecast(e, d) {
       const hhz = (ts) => new Date(ts * 1000).toISOString().slice(11, 13) + "Z";
       return d.airports.map((a) => {
