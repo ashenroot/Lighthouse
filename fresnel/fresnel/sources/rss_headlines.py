@@ -66,8 +66,8 @@ class RssHeadlines(Source):
     page = PAGE
     tier = "fragile"
     default_interval = 900
-    # feeds: a list of {name, url, keywords, max_items, stale_days, max_age_hours}, the last four optional. keywords keep only
-    # items whose title or summary contains one of them. stale_days: a feed whose newest item is older than this is shown as
+    # feeds: a list of {name, url, keywords, exclude_url, max_items, stale_days, max_age_hours}, the last five optional. keywords keep only
+    # items whose title or summary contains one of them. exclude_url drops items whose link contains any of its strings (e.g. /opinion/). stale_days: a feed whose newest item is older than this is shown as
     # stale. A slow feed (a weekly blog, say) can set its own stale_days and max_age_hours.
     default_params = {"feeds": DEFAULT_FEEDS, "stale_days": 3, "max_items": 12, "max_age_hours": 48}
 
@@ -99,6 +99,8 @@ class RssHeadlines(Source):
         words = [w.lower() for w in spec.get("keywords") or []]
         keep = [i for i in dated if not words or any(w in (i["title"] + " " + i["text"]).lower() for w in words)]
         cutoff = now - timedelta(hours=float(spec.get("max_age_hours", self.params["max_age_hours"])))
+        skip = [w.lower() for w in spec.get("exclude_url") or []]
+        keep = [i for i in keep if not any(w in i["url"].lower() for w in skip)]
         keep = [i for i in keep if i["time"] >= cutoff and i["title"]]
         keep.sort(key=lambda i: i["time"], reverse=True)
         out = [{"outlet": name, "title": i["title"][:200], "url": i["url"], "time": i["time"].isoformat()} for i in keep[: int(spec.get("max_items", 5))]]

@@ -462,6 +462,16 @@ async def test_rss_headlines_keywords_and_all_feeds_dead(config, clock):
 
 
 @pytest.mark.asyncio
+async def test_rss_headlines_exclude_url_drops_matching_links(config, clock):
+    from fresnel.config import SourceCfg
+    config.sources["rss_headlines"] = SourceCfg(params={"feeds": [
+        {"name": "BBC", "url": "https://feeds.bbci.co.uk/news/world/rss.xml", "exclude_url": ["EXAMPLE.org/1"]}]})
+    r = Relay(config, client=make_client(), now=clock)
+    await r.refresh("rss_headlines")
+    assert [h["title"] for h in r.envelope("rss_headlines")["data"]["headlines"]] == ["Flood warnings across the north"]
+
+
+@pytest.mark.asyncio
 async def test_rss_headlines_refuses_feeds_with_a_dtd(config, clock):
     from fresnel.config import SourceCfg
     from conftest import rss

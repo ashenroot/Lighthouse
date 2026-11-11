@@ -347,12 +347,13 @@ sources:
         - name: NPR
           url: https://feeds.npr.org/1001/rss.xml
           keywords: [grid, outage, storm]   # optional: keep only items mentioning one of these
+          exclude_url: [/opinion/]          # optional: drop items whose link contains any of these
           max_items: 3
 ```
 
 | Param | Default | Meaning |
 |---|---|---|
-| `feeds` | BBC World, NPR | List of `name` and `url`, plus optional `keywords`, `max_items` (default 5), `stale_days` and `max_age_hours`. The last two override the settings below for one feed, which suits a weekly blog. |
+| `feeds` | BBC World, NPR | List of `name` and `url`, plus optional `keywords`, `exclude_url` (drops items whose link contains any listed string, such as `/opinion/`), `max_items` (default 5), `stale_days` and `max_age_hours`. The last two override the settings below for one feed, which suits a weekly blog. |
 | `stale_days` | `3` | A feed older than this is stale. |
 | `max_age_hours` | `48` | Items older than this are dropped. |
 | `max_items` | `12` | Most headlines shown in total. |
