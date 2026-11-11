@@ -121,11 +121,18 @@ class Relay:
         src = self.sources[sid]
         return bool(src.key) and self.key(src.key) is None
 
+    def superseded(self, sid: str) -> bool:
+        """True when a keyed source that replaces this one has its key, so showing both would be redundant."""
+        return any(sid in other.supersedes and not self.waiting_for_key(oid) for oid, other in self.sources.items() if oid != sid)
+
+    def skipped(self, sid: str) -> bool:
+        return self.waiting_for_key(sid) or self.superseded(sid)
+
     # fetching
 
     async def refresh(self, sid: str) -> None:
         src, state = self.sources[sid], self.states[sid]
-        if self.waiting_for_key(sid):
+        if self.skipped(sid):
             return  # nothing to ask the provider yet; the board lists it under Setup
         state.last_attempt = self.now()
         try:
@@ -156,7 +163,7 @@ class Relay:
         src = self.sources[sid]
         await asyncio.sleep(min(index * 0.7, 10) + random.uniform(0, 1))
         while True:
-            if self.waiting_for_key(sid):
+            if self.skipped(sid):
                 await asyncio.sleep(RECHECK_MISSING)  # a key set with `fresnel key set` is picked up within a minute
                 continue
             await self.refresh(sid)
@@ -250,7 +257,7 @@ class Relay:
 
     def snapshot(self) -> dict:
         now = self.now()
-        sources = {sid: self.envelope(sid) for sid in self.sources if not self.waiting_for_key(sid)}
+        sources = {sid: self.envelope(sid) for sid in self.sources if not self.skipped(sid)}
         panels: dict[str, dict] = {}
         for sid, env in sources.items():
             panel = panels.setdefault(env["panel"], {"status": "nominal", "sources": []})
@@ -271,7 +278,7 @@ class Relay:
         now = self.now()
         rows = []
         for sid, src in self.sources.items():
-            if self.waiting_for_key(sid):
+            if self.skipped(sid):
                 continue  # not a fault; the snapshot lists it under setup
             st = self.states[sid]
             rows.append(

@@ -197,6 +197,19 @@ def _eia(request):
     return {"response": {"total": str(len(rows)), "data": rows[:length]}}
 
 
+AIRNOW_KEY = "airnowkey1234567"
+
+
+def _airnow(request):
+    """Mock AirNow's current-observation endpoint, with the shape the real one returns."""
+    if request.url.params.get("API_KEY") != AIRNOW_KEY:
+        return httpx.Response(401, text="Invalid API key")
+    def row(param, aqi, hour="07:00"):
+        return {"dateObserved": "2026-10-14", "hourObserved": hour, "localTimeZone": "EDT", "reportingAreaName": "Kansas City",
+                "siteID": "1", "siteName": "Site", "parameterName": param, "nowcastAQI": aqi, "aqiCategoryName": "x"}
+    return [row("PM2.5", 36), row("OZONE", 35), row("PM10", 16), row("NO2", -999)]
+
+
 def _ms(delta: timedelta) -> int:
     return int((NOW - delta).timestamp() * 1000)
 
@@ -326,6 +339,7 @@ def feeds() -> dict:
         ],
         "/api/data/taf": _taf,
         "api.eia.gov": _eia,
+        "www.airnowapi.org": _airnow,
         "mapservices.weather.noaa.gov": _outlooks,
         "api.water.noaa.gov": lambda request: {"gauges": [dict(g) for g in GAUGES]},
         "services9.arcgis.com": _portwatch,

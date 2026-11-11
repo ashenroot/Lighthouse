@@ -96,7 +96,7 @@ async def test_key_set_later_is_used_without_a_restart_and_never_appears_in_outp
     client = client_for(ok)
     r = Relay(config, client=client, now=clock)
     save_key("eia", KEY, config.server.data_dir)
-    assert r.snapshot()["setup"] == []
+    assert [i["id"] for i in r.snapshot()["setup"] if i["key"] == "eia"] == []
     await r.refresh("dummy_keyed")
     assert client.calls[0].url.params["api_key"] == KEY
     snap = r.snapshot()

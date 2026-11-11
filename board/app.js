@@ -158,6 +158,11 @@
         return row(c.name, `Outage running ${span(c.duration_s)} · ${c.source}${brief}${more}`, { url: e.source_url, tone: c.state === "outage" ? "active" : null });
       });
     },
+    airnow_aqi(e, d) {
+      const rows = [row("US AQI", `${d.aqi} · ${d.category} · ${d.dominant}`, { url: e.source_url, tone: e.status === "active" ? "active" : d.aqi <= 50 ? "ok" : null })];
+      d.readings.filter((x) => x.pollutant !== d.dominant).forEach((x) => rows.push(row(x.pollutant, `${x.aqi} · ${x.category}`, { url: e.source_url })));
+      return rows.concat([row("Monitors", `${d.area} area`, { url: e.source_url })]);
+    },
     air_quality(e, d) {
       const rows = [row("US AQI (modeled)", `${d.aqi} · ${d.category}`,
         { url: e.source_url, tone: e.status === "active" ? "active" : d.aqi <= 50 ? "ok" : null })];

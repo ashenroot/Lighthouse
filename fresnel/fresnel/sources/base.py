@@ -50,6 +50,7 @@ class Source:
     default_params: dict[str, Any] = {}
     needs: tuple[str, ...] = ()  # params that must be non-empty, or the relay skips the source
     inherits: dict[str, str] = {}  # param -> other source id whose value of it is used when this one is empty
+    supersedes: tuple[str, ...] = ()  # ids of keyless sources this one replaces while it has its key
     key: str | None = None  # name of the API key this source needs (see fresnel/keys.py), if any
 
     def __init__(self, cfg: SourceCfg, ctx: Context):

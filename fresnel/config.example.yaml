@@ -79,6 +79,9 @@ sources:
     params:
       radius_km: 50                   # NWS forecast gauges within this distance
       active_min: minor               # action | minor | moderate | major: lowest flood category that turns the panel active
+  airnow_aqi:                           # needs a free key: fresnel key set airnow. Replaces air_quality while the key is set.
+    params:
+      active_aqi: 101                   # US AQI at which the panel turns active
   air_quality:
     params:
       active_aqi: 101                 # US AQI that turns the panel active (101 = unhealthy for sensitive groups)

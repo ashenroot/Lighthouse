@@ -121,6 +121,17 @@ Goes **active** when any gauge is at `active_min` or worse, now or in the NWS fo
 
 This complements `usgs_gauges`, which reports raw heights and needs flood stages typed in by hand.
 
+### `airnow_aqi` — Air quality, measured (panel: Environment)
+
+The closest EPA AirNow monitor reading for each pollutant (PM2.5, PM10, ozone and others) within 50 miles of your location, as the hourly NowCast AQI. Needs the free `airnow` key (see [keys](keys.md)). While the key is set it **replaces** the modeled `air_quality` source, so the Environment panel shows one air quality row set, not two. Without the key, `air_quality` stays.
+
+Goes **active** when the highest pollutant AQI reaches `active_aqi`. Fails visibly when AirNow returns an error or no readings, or when the newest reading is older than `max_age_minutes`.
+
+| Param | Default | Meaning |
+|---|---|---|
+| `active_aqi` | `101` | US AQI at which the panel turns active (101 is unhealthy for sensitive groups). |
+| `max_age_minutes` | `240` | Age at which the newest reading counts as failed. |
+
 ### `air_quality` — Air quality (panel: Environment)
 
 The US Air Quality Index at your location, from Open-Meteo's air quality API, with the pollutant that is driving it (PM2.5, PM10 or ozone). Default interval 1 hour. No key. The scale and category names are the EPA's.
