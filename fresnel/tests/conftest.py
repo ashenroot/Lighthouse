@@ -120,6 +120,21 @@ def _ioda(request):
     return {"type": "outages.events", "error": None, "data": events}
 
 
+def _taf(request):
+    """Mock TAFs at NOW (12:00Z): KMCI is VFR now, IFR from 16Z, with TEMPO LIFR later; KATL stays VFR; ZZZ has none."""
+    t = int(NOW.timestamp())
+    def period(start, end, vis, clouds, change=None):
+        return {"timeFrom": t + start * 3600, "timeTo": t + end * 3600, "fcstChange": change, "visib": vis, "vertVis": None, "clouds": clouds}
+    mci = {"icaoId": "KMCI", "name": "Kansas City Intl", "validTimeTo": t + 20 * 3600, "fcsts": [
+        period(-3, 4, "6+", [{"cover": "SCT", "base": 8000}]),
+        period(4, 10, "2", [{"cover": "BKN", "base": 700}], "FM"),
+        period(6, 8, "1/2", [{"cover": "OVC", "base": 200}], "TEMPO"),
+        period(10, 20, "6+", [{"cover": "FEW", "base": 12000}], "FM")]}
+    atl = {"icaoId": "KATL", "name": "Atlanta Hartsfield", "validTimeTo": t + 20 * 3600, "fcsts": [
+        period(-3, 20, "6+", [{"cover": "FEW", "base": 5000}, {"cover": "BKN", "base": 12000}])]}
+    return [mci, atl]
+
+
 def _ms(delta: timedelta) -> int:
     return int((NOW - delta).timestamp() * 1000)
 
@@ -247,6 +262,7 @@ def feeds() -> dict:
              "wspd": 3, "wxString": "BR", "clouds": [{"cover": "BKN", "base": 300}, {"cover": "OVC", "base": 13000}]},
             {"icaoId": "KATL", "name": "Atlanta, GA, US", "obsTime": int(NOW.timestamp()) - 3 * 3600 - 60, "fltCat": "VFR", "visib": "10+", "clouds": []},
         ],
+        "/api/data/taf": _taf,
         "api.water.noaa.gov": lambda request: {"gauges": [dict(g) for g in GAUGES]},
         "services9.arcgis.com": _portwatch,
         "api.fdic.gov": FDIC,

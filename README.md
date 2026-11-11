@@ -78,7 +78,7 @@ The board itself is described in [`board/README.md`](board/README.md).
 |---|---|---|
 | Local | NWS alerts, FEMA declarations, USGS earthquakes, SPC storm reports | an alert of moderate or higher severity, a recent declaration for your county, a nearby quake of M4 or more, a significant storm report within 150 km |
 | Environment | NWS river flood stages, USGS stream gauges, Drought Monitor, air quality, NIFC wildfires | a nearby river gauge at minor flooding or worse (observed or forecast), half the county in severe drought, US AQI of 101 or more, an uncontained fire of 100+ acres within 100 km |
-| Transport | FAA airport status, airport weather (METAR) | a delay or ground program at an airport you list, or IFR or worse weather there |
+| Transport | FAA airport status, airport weather (METAR), airport forecast (TAF) | a delay or ground program at an airport you list, IFR or worse weather there, or an IFR or worse forecast for later |
 | Power grid | ODIN customer outages, DOE 202(c) emergency orders, NERC alerts, links to regional operators | reported outages reach a threshold in your county or state, a new DOE emergency order (not a plant-retention renewal) |
 | Finance | FDIC bank failures | a bank failure in the last 14 days |
 | Federal actions | Federal Register presidential documents | a new national emergency declaration |

@@ -186,6 +186,20 @@ Goes **active** when an airport is at `active_min` or worse. The default, IFR, i
 | `active_min` | `IFR` | `MVFR`, `IFR` or `LIFR`: the category at which the airport counts as active. |
 | `max_age_minutes` | `180` | Reports older than this are ignored. |
 
+### `aviation_forecast` — Airport forecast (panel: Transport)
+
+The TAF (terminal aerodrome forecast) at your airports, from the Aviation Weather Center. Where `aviation_weather` shows the conditions now, this shows what the airport's forecasters expect over the next `hours`, so a fog or low-cloud forecast shows up before it arrives. Default interval 30 minutes. **Off until airports are set**, and it uses the same list as `faa_airports` unless you give it its own.
+
+A TAF carries no flight category, so it is worked out here from each period's visibility and lowest broken or overcast layer (or vertical visibility), by the standard thresholds: LIFR below 1 mile or 500 ft, IFR below 3 miles or 1,000 ft, MVFR up to 5 miles or 3,000 ft. Periods marked TEMPO or PROB are possible, not prevailing, so they are shown ("LIFR possible (TEMPO)") but do not turn the panel active. An airport with no current TAF, which is common at small fields, shows "No forecast" and is never counted as clear. If none of your airports has a current forecast, the source fails (grey).
+
+Goes **active** when a prevailing forecast period reaches `active_min` within the window; the summary gives the hour (UTC) it begins.
+
+| Param | Default | Meaning |
+|---|---|---|
+| `airports` | the `faa_airports` list | FAA or ICAO codes. |
+| `active_min` | `IFR` | `MVFR`, `IFR` or `LIFR`: the forecast category at which the airport counts as active. |
+| `hours` | `12` | How far ahead to look. |
+
 ### `cdc_wastewater` — Wastewater (panel: Health)
 
 Viral activity in your state's wastewater, from the CDC: SARS-CoV-2, influenza A and RSV. The data updates weekly, so the default interval is 6 hours.

@@ -207,6 +207,15 @@
         return row(a.airport, parts.join(" · "), { url: e.source_url, tone: a.active ? "active" : a.category === "VFR" ? "ok" : null });
       });
     },
+    aviation_forecast(e, d) {
+      const hhz = (ts) => new Date(ts * 1000).toISOString().slice(11, 13) + "Z";
+      return d.airports.map((a) => {
+        if (!a.forecast) return row(a.airport, "No forecast", { url: e.source_url, tone: "unknown" });
+        const maybe = a.possible ? ` · ${a.possible} possible (TEMPO)` : "";
+        if (a.active) return row(a.airport, `${a.bad_category} forecast from ${hhz(a.bad_from)}${maybe}`, { url: e.source_url, tone: "active" });
+        return row(a.airport, `${a.worst} through ${a.hours} h${maybe}`, { url: e.source_url, tone: a.worst === "VFR" && !a.possible ? "ok" : null });
+      });
+    },
     cdc_wastewater(e, d) {
       const names = Object.keys(d.pathogens);
       return names.map((n) =>

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from .air_quality import AirQuality
+from .aviation_forecast import AviationForecast
 from .aviation_weather import AviationWeather
 from .base import Context, Result, Source
 from .cdc_wastewater import CdcWastewater
@@ -33,7 +34,7 @@ REGISTRY: dict[str, type[Source]] = {
     cls.id: cls for cls in (
         NwsAlerts, OpenFema, UsgsQuakes, UsgsGauges, Drought, FaaAirports, AviationWeather, CdcWastewater,
         FdaRecalls, CpscRecalls, CisaKev, SwpcKp, SwpcScales, NhcStorms,
-        OdinOutages, Doe202c, NercAlerts, GridOperators, RiverStages, Chokepoints, AirQuality, NifcWildfires, FdicFailures, FederalRegister, SpcStormReports, RssHeadlines, IodaOutages,
+        OdinOutages, Doe202c, NercAlerts, GridOperators, RiverStages, Chokepoints, AirQuality, NifcWildfires, FdicFailures, FederalRegister, SpcStormReports, RssHeadlines, IodaOutages, AviationForecast,
     )
 }
 

@@ -564,3 +564,40 @@ async def test_ioda_outages_api_error_field_is_a_failure(config, clock):
     await r.refresh("ioda_outages")
     env = r.envelope("ioda_outages")
     assert env["status"] == "unknown" and env["fetch"]["error"].startswith("IODA reported an error for UA")
+
+
+@pytest.mark.asyncio
+async def test_aviation_forecast_warns_ahead_and_tempo_does_not_activate(config, clock):
+    from fresnel.config import SourceCfg
+    config.sources["aviation_forecast"] = SourceCfg(params={"airports": ["MCI", "ATL", "ZZZ"], "active_min": "IFR"})
+    r = Relay(config, client=make_client(), now=clock)
+    await r.refresh("aviation_forecast")
+    env = r.envelope("aviation_forecast")
+    rows = {a["airport"]: a for a in env["data"]["airports"]}
+    assert env["status"] == "active"
+    assert env["summary"] == "MCI IFR forecast from 16Z; no forecast for ZZZ"
+    assert rows["MCI"]["bad_category"] == "IFR" and rows["MCI"]["possible"] == "LIFR"
+    assert rows["ATL"]["active"] is False and rows["ATL"]["worst"] == "VFR" and rows["ZZZ"]["forecast"] is False
+    # Looking only 3 hours ahead misses the 16Z deterioration, so MCI reads clear for that horizon.
+    config.sources["aviation_forecast"] = SourceCfg(params={"airports": ["MCI"], "hours": 3})
+    r = Relay(config, client=make_client(), now=clock)
+    await r.refresh("aviation_forecast")
+    env = r.envelope("aviation_forecast")
+    assert env["status"] == "nominal" and env["summary"] == "No IFR or worse forecast in the next 3 h at MCI"
+
+
+@pytest.mark.asyncio
+async def test_aviation_forecast_category_rules_and_no_forecast_is_a_failure(config, clock):
+    from fresnel.sources.aviation_forecast import category
+    assert category({"visib": "6+", "clouds": [{"cover": "BKN", "base": 12000}]}) == "VFR"
+    assert category({"visib": "4", "clouds": []}) == "MVFR"
+    assert category({"visib": "10", "clouds": [{"cover": "OVC", "base": 900}]}) == "IFR"
+    assert category({"visib": "1/2", "clouds": []}) == "LIFR"
+    assert category({"visib": "1 1/2", "clouds": []}) == "IFR"
+    assert category({"visib": "6+", "clouds": [], "vertVis": 2}) == "LIFR"
+    from fresnel.config import SourceCfg
+    config.sources["aviation_forecast"] = SourceCfg(params={"airports": ["ZZZ"]})
+    r = Relay(config, client=make_client(), now=clock)
+    await r.refresh("aviation_forecast")
+    env = r.envelope("aviation_forecast")
+    assert env["status"] == "unknown" and env["fetch"]["error"] == "unexpected response format"
