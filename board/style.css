@@ -102,3 +102,18 @@ a.row:hover{background:#1b252c}
 .pop-body .pts{margin:0;padding-left:20px;max-width:68ch;display:flex;flex-direction:column;gap:8px}
 .pop-body .lbl{color:var(--strong)}
 .links{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;overflow-wrap:anywhere}
+
+#pinned:empty{display:none}
+.tabs{display:flex;flex-wrap:wrap;align-items:flex-end;gap:6px;border-bottom:1px solid var(--line);margin-bottom:-4px}
+.tab{font:inherit;display:flex;align-items:center;gap:9px;padding:9px 14px;background:none;border:1px solid transparent;border-bottom:0;border-radius:8px 8px 0 0;color:var(--muted);cursor:pointer}
+.tab:hover{color:var(--strong)}
+.tab[aria-selected=true]{background:var(--panel);border-color:var(--line);color:var(--strong);margin-bottom:-1px}
+.tab-badge{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11px;padding:1px 8px;border-radius:999px;border:1px solid;white-space:nowrap}
+.tab-badge.nominal{color:var(--ok);border-color:var(--ok-line);background:var(--ok-bg)}
+.tab-badge.active{color:var(--warn);border-color:var(--warn-line);background:var(--warn-bg)}
+.tab-badge.unknown{color:var(--unk);border-color:var(--unk-line);border-style:dashed}
+.tab-badge.info{color:var(--info);border-color:var(--info-line);background:var(--info-bg)}
+.tab-hint{margin-left:auto;padding:0 4px 9px;font-size:11px;color:var(--muted)}
+.wide-note{grid-column:1/-1}
+@media (max-width:640px){.tabs{flex-wrap:nowrap;overflow-x:auto}.tab{flex:0 0 auto}.tab-hint{display:none}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.tile{min-width:0;max-width:none;padding:8px 9px}.tile .dt{display:none}.tile .lb{font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.tile .st{font-size:10px;letter-spacing:.04em}}

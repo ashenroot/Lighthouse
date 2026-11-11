@@ -33,7 +33,8 @@ Edit the copy you deploy, so `git pull` on a checkout never conflicts with your 
 ## Use
 
 - Status tiles across the top show each panel's status. Click one to hide or show that panel.
-- Drag a panel by its header, or use the arrows, to rearrange.
+- Panels are grouped into tabs: Now, Infrastructure, Health, World and All. Each tab shows the status of its panels (how many are active or unknown) so an alert is never hidden behind a tab. A panel that belongs to no group appears under Other. The Keeper's Log stays above the tabs. The last tab you used is remembered in this browser.
+- Drag a panel by its header, or use the arrows, to rearrange it within the tab. Left and right arrow keys move between tabs.
 - The refresh interval (off, 1m to 1h) sits in the header. Refresh uses `If-None-Match`, so an unchanged snapshot costs a 304.
 - Interval, hidden panels and order are stored in this browser's localStorage (`lighthouse.prefs`).
 - Every row links to its source in a new tab. Each panel footer shows per-source freshness.

@@ -15,6 +15,14 @@
     recalls: "Recalls", geo: "Internet outages",
   };
   const DEFAULT_ORDER = ["brief", "local", "environment", "transport", "grid", "supply", "finance", "federal", "space", "tropical", "cyber", "health", "recalls", "geo", "headlines"];
+  // Tabs group the panels by theme. A panel that is in no group still appears, under "Other", so a new source is never hidden.
+  // The Keeper's Log (brief) is pinned above the tabs. The "All" tab is the whole board in one page.
+  const GROUPS = [
+    { id: "now", label: "Now", panels: ["local", "environment", "transport", "tropical"] },
+    { id: "infra", label: "Infrastructure", panels: ["grid", "supply", "finance", "federal", "cyber", "space"] },
+    { id: "health", label: "Health", panels: ["health", "recalls"] },
+    { id: "world", label: "World", panels: ["geo", "headlines"] },
+  ];
   const STATE_TEXT = { nominal: "● NOMINAL", active: "▲ ACTIVE", unknown: "? UNKNOWN", info: "ℹ INFO" };
   const SEVERITY = { Unknown: 0, Minor: 1, Moderate: 2, Severe: 3, Extreme: 4 };
 
@@ -51,12 +59,13 @@
 
   // ---------- preferences (this browser only) ----------
   function loadPrefs() {
-    const base = { interval: 5, hidden: [], order: [] };
+    const base = { interval: 5, hidden: [], order: [], tab: "" };
     try {
       const p = JSON.parse(localStorage.getItem(PREF_KEY) || "null");
       if (!p) return base;
       if (INTERVALS.some(([m]) => m === p.interval)) base.interval = p.interval;
       if (Array.isArray(p.hidden)) base.hidden = p.hidden.filter((x) => typeof x === "string");
+      if (typeof p.tab === "string") base.tab = p.tab;
       if (Array.isArray(p.order)) base.order = p.order.filter((x) => typeof x === "string");
     } catch (_) { /* storage blocked or corrupt: use defaults */ }
     return base;
@@ -67,7 +76,7 @@
   }
 
   // ---------- state ----------
-  const state = { snap: null, etag: null, lastOk: null, error: null, nextAt: null, loading: false };
+  const state = { snap: null, etag: null, lastOk: null, error: null, nextAt: null, loading: false, visible: [], refocus: null };
   let dragId = null;
 
   // ---------- row renderers, one per source ----------
@@ -543,18 +552,66 @@
   }
 
   function move(id, dir) {
-    const ids = orderedIds(buildModel(state.snap)).filter((x) => !prefs.hidden.includes(x) || x === id);
-    const i = ids.indexOf(id), j = i + dir;
-    if (j < 0 || j >= ids.length) return;
-    [ids[i], ids[j]] = [ids[j], ids[i]];
-    const rest = orderedIds(buildModel(state.snap)).filter((x) => !ids.includes(x));
-    prefs.order = ids.concat(rest); savePrefs(); render();
+    const vis = state.visible;
+    const i = vis.indexOf(id), j = i + dir;
+    if (i < 0 || j < 0 || j >= vis.length) return;
+    const all = orderedIds(buildModel(state.snap));
+    const x = all.indexOf(vis[i]), y = all.indexOf(vis[j]);
+    [all[x], all[y]] = [all[y], all[x]];
+    prefs.order = all; savePrefs(); render();
   }
 
   function toggle(id) {
     const i = prefs.hidden.indexOf(id);
     if (i >= 0) prefs.hidden.splice(i, 1); else prefs.hidden.push(id);
     savePrefs(); render();
+  }
+
+  // ---------- tabs ----------
+  const WORST = ["nominal", "info", "unknown", "active"];
+
+  function tabList(model) {
+    const ids = Object.keys(model).filter((id) => id !== "brief");
+    const grouped = new Set(GROUPS.flatMap((g) => g.panels));
+    const tabs = GROUPS.map((g) => ({ id: g.id, label: g.label, panels: g.panels.filter((id) => ids.includes(id)) }));
+    const other = ids.filter((id) => !grouped.has(id));
+    if (other.length) tabs.push({ id: "other", label: "Other", panels: other });
+    const shown = tabs.filter((t) => t.panels.length);
+    shown.push({ id: "all", label: "All", panels: ids });
+    return shown;
+  }
+
+  function tabBadge(t, model) {
+    const live = t.panels.filter((id) => !prefs.hidden.includes(id)).map((id) => model[id].status);
+    const n = (s) => live.filter((x) => x === s).length;
+    if (n("active")) return { cls: "active", text: `${n("active")} active` };
+    if (n("unknown")) return { cls: "unknown", text: `${n("unknown")} unknown` };
+    return { cls: live.some((x) => x === "info") ? "info" : "nominal", text: live.length ? "●" : "–" };
+  }
+
+  function selectTab(id) { prefs.tab = id; savePrefs(); render(); }
+
+  function renderTabs(tabs, current, model) {
+    const bar = $("tabs");
+    const held = document.activeElement && document.activeElement.id && document.activeElement.id.startsWith("tab-") ? document.activeElement.id.slice(4) : null;
+    if (held && !state.refocus) state.refocus = held;  // a redraw must not drop keyboard focus from the tab bar
+    bar.replaceChildren(...tabs.map((t, i) => {
+      const badge = tabBadge(t, model);
+      const on = t.id === current;
+      return h("button", {
+        type: "button", role: "tab", id: "tab-" + t.id, class: "tab", "aria-selected": String(on), tabindex: on ? "0" : "-1",
+        "aria-controls": "panels", "aria-label": `${t.label}, ${badge.cls === "active" || badge.cls === "unknown" ? badge.text : "all nominal"}`,
+        onclick: () => { state.refocus = t.id; selectTab(t.id); },
+        onkeydown: (ev) => {
+          const step = ev.key === "ArrowRight" ? 1 : ev.key === "ArrowLeft" ? -1 : 0;
+          if (!step) return;
+          ev.preventDefault();
+          const next = tabs[(i + step + tabs.length) % tabs.length];
+          state.refocus = next.id; selectTab(next.id);
+        },
+      }, h("span", {}, t.label), h("span", { class: "tab-badge " + badge.cls, "aria-hidden": "true" }, badge.text));
+    }), h("span", { class: "tab-hint mono" }, "drag a panel, or use ◀ ▶, to rearrange"));
+    if (state.refocus) { const el = $("tab-" + state.refocus); if (el) el.focus(); state.refocus = null; }
   }
 
   // ---------- rendering ----------
@@ -591,7 +648,17 @@
         h("div", { class: "lb" }, TITLES[id] || id),
         h("div", { class: "dt" }, clip(tileDetail(m), 60)));
     }));
-    $("panels").replaceChildren(...ids.map((id, i) => panelEl(model[id], snap, i)));
+    const tabs = tabList(model);
+    const current = (tabs.find((t) => t.id === prefs.tab) || tabs[0]).id;
+    renderTabs(tabs, current, model);
+    const inTab = new Set(tabs.find((t) => t.id === current).panels);
+    const mine = ids.filter((id) => inTab.has(id));
+    state.visible = mine.filter((id) => !prefs.hidden.includes(id));
+    $("pinned").replaceChildren(...(model.brief ? [panelEl(model.brief, snap, 0)] : []));
+    $("panels").setAttribute("aria-labelledby", "tab-" + current);
+    $("panels").replaceChildren(...(mine.length && !state.visible.length
+      ? [h("div", { class: "empty wide-note" }, "Every panel in this tab is hidden. Click its tile above to show it again.")]
+      : mine.map((id, i) => panelEl(model[id], snap, i))));
     $("relay-info").textContent = `Fresnel relay · schema ${snap.schema} · ${Object.keys(snap.sources).length} sources`;
   }
 
