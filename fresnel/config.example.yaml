@@ -104,6 +104,14 @@ sources:
     params:
       countries: [UA, RU, IR, IL, TW, VE]   # two-letter codes to watch
       min_minutes: 30                       # shorter events are listed but do not turn the panel active
+  eia_fuel_prices:                      # needs a free key: fresnel key set eia
+    params:
+      # region: R20                    # EIA price region; the default follows location.state
+      rise_pct: 10                      # a rise this large over `weeks` turns the panel active
+  eia_grid_demand:                      # needs a free key (fresnel key set eia) and your balancing authority
+    params:
+      balancing_authority: SOCO         # EIA code for your grid operator, e.g. SOCO, PJM, MISO, ERCO, CISO
+      peak_pct: 90                      # demand or forecast this close to the one-year peak turns the panel active
   chokepoints:
     params:
       # names: [Panama Canal, Suez Canal, Strait of Hormuz]   # PortWatch chokepoint names; the default is six major ones

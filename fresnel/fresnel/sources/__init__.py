@@ -9,6 +9,8 @@ from .cdc_wastewater import CdcWastewater
 from .chokepoints import Chokepoints
 from .cisa_kev import CisaKev
 from .doe_202c import Doe202c
+from .eia_fuel_prices import EiaFuelPrices
+from .eia_grid_demand import EiaGridDemand
 from .fdic_failures import FdicFailures
 from .federal_register import FederalRegister
 from .drought import Drought
@@ -35,7 +37,7 @@ REGISTRY: dict[str, type[Source]] = {
     cls.id: cls for cls in (
         NwsAlerts, OpenFema, UsgsQuakes, UsgsGauges, Drought, FaaAirports, AviationWeather, CdcWastewater,
         FdaRecalls, CpscRecalls, CisaKev, SwpcKp, SwpcScales, NhcStorms,
-        OdinOutages, Doe202c, NercAlerts, GridOperators, RiverStages, Chokepoints, AirQuality, NifcWildfires, FdicFailures, FederalRegister, SpcStormReports, RssHeadlines, IodaOutages, AviationForecast, SpcOutlook, WpcRainfallOutlook,
+        OdinOutages, Doe202c, NercAlerts, GridOperators, RiverStages, Chokepoints, AirQuality, NifcWildfires, FdicFailures, FederalRegister, SpcStormReports, RssHeadlines, IodaOutages, AviationForecast, SpcOutlook, WpcRainfallOutlook, EiaFuelPrices, EiaGridDemand,
     )
 }
 

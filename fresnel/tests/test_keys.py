@@ -82,7 +82,9 @@ async def test_source_without_a_key_is_listed_under_setup_and_asks_nothing(confi
     assert client.calls == []  # no request until there is a key
     snap = r.snapshot()
     assert "dummy_keyed" not in snap["sources"] and "dummy_keyed" not in snap["panels"].get("environment", {}).get("sources", [])
-    assert snap["setup"] == [{"id": "dummy_keyed", "title": "Dummy keyed source", "panel": "environment", "key": "eia", "label": "EIA",
+    mine = [item for item in snap["setup"] if item["id"] == "dummy_keyed"]
+    assert "eia_fuel_prices" in [item["id"] for item in snap["setup"]]  # a real source that uses the same key
+    assert mine == [{"id": "dummy_keyed", "title": "Dummy keyed source", "panel": "environment", "key": "eia", "label": "EIA",
                               "signup_url": "https://www.eia.gov/opendata/register.php", "command": "fresnel key set eia"}]
     env = r.envelope("dummy_keyed")
     assert env["status"] == "unknown" and env["summary"] == "Needs a free EIA key. Run: fresnel key set eia"

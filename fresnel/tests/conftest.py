@@ -152,6 +152,51 @@ def _outlooks(request):
     raise AssertionError(path)
 
 
+EIA_KEY = "eiakey1234567890"
+
+
+def _eia(request):
+    """Mock api.eia.gov v2, with the shapes the real API returns: string values, newest first, a total, and an offset."""
+    q = request.url.params
+    if q.get("api_key") != EIA_KEY:
+        return httpx.Response(403, json={"error": "API_KEY_INVALID"})
+    offset, length = int(q.get("offset", 0)), int(q.get("length", 5000))
+    if "/petroleum/" in request.url.path:
+        areas, products = q.get_list("facets[duoarea][]"), q.get_list("facets[product][]")
+        names = {"NUS": "U.S.", "R20": "PADD 2", "R1Z": "PADD 1C"}
+        rows = []
+        for area in areas:
+            if area == "R9Z":
+                continue  # an unknown region has no rows
+            for product in products:
+                for week in range(60):
+                    day = (datetime(2026, 10, 12) - timedelta(weeks=week)).date().isoformat()
+                    if day < q.get("start", "0"):
+                        continue
+                    price = {"NUS": {"EPMR": 3.50, "EPD2D": 6.10}}.get(area, {"EPMR": 3.40, "EPD2D": 5.00})[product]
+                    if area == "R20" and product == "EPMR":
+                        price = {0: 3.82, 1: 3.70, 4: 3.38}.get(week, 3.40)
+                    rows.append({"period": day, "duoarea": area, "area-name": names.get(area, area), "product": product,
+                                 "product-name": "x", "process": "PTE", "value": f"{price:.3f}", "units": "$/GAL"})
+        rows.sort(key=lambda r: r["period"], reverse=True)
+        return {"response": {"total": str(len(rows)), "data": rows[offset:offset + length]}}
+    if q.get("facets[respondent][]") == "XXXX":
+        return {"response": {"total": "0", "data": []}}
+    types = q.get_list("facets[type][]")
+    hour = lambda t: t.strftime("%Y-%m-%dT%H")
+    base = NOW - timedelta(hours=2)  # the latest actual reading
+    if types == ["D"]:  # the year of history: 5,900 ordinary hours, 99 at 30,000 and one bad spike
+        rows = [{"period": hour(base - timedelta(hours=i)), "respondent": "SOCO", "type": "D", "value": str(90000 if i == 50 else 30000 if i < 100 else 20000)}
+                for i in range(6000)]
+        return {"response": {"total": "6000", "data": rows[offset:offset + length]}}
+    rows = [{"period": hour(base - timedelta(hours=i)), "respondent": "SOCO", "respondent-name": "Southern Company Services, Inc. - Trans",
+             "type": "D", "value": "27500" if i == 0 else "22000"} for i in range(30)]
+    rows += [{"period": hour(NOW - timedelta(hours=30) + timedelta(hours=i)), "respondent": "SOCO", "type": "DF",
+              "value": "28000" if i == 36 else "26000"} for i in range(43)]
+    rows.sort(key=lambda r: r["period"], reverse=True)
+    return {"response": {"total": str(len(rows)), "data": rows[:length]}}
+
+
 def _ms(delta: timedelta) -> int:
     return int((NOW - delta).timestamp() * 1000)
 
@@ -280,6 +325,7 @@ def feeds() -> dict:
             {"icaoId": "KATL", "name": "Atlanta, GA, US", "obsTime": int(NOW.timestamp()) - 3 * 3600 - 60, "fltCat": "VFR", "visib": "10+", "clouds": []},
         ],
         "/api/data/taf": _taf,
+        "api.eia.gov": _eia,
         "mapservices.weather.noaa.gov": _outlooks,
         "api.water.noaa.gov": lambda request: {"gauges": [dict(g) for g in GAUGES]},
         "services9.arcgis.com": _portwatch,

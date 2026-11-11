@@ -226,6 +226,19 @@
     },
     spc_outlook(e, d) { return outlookRows(e, d, "Severe storms"); },
     wpc_rainfall_outlook(e, d) { return outlookRows(e, d, "Flash flooding"); },
+    eia_fuel_prices(e, d) {
+      const sgn = (n) => (n == null ? "n/a" : `${n >= 0 ? "+" : ""}${n.toFixed(0)}%`);
+      const rows = d.products.map((p) => p.rated
+        ? row(`${p.label} (${d.region.name})`, `$${p.price.toFixed(2)} · ${sgn(p.change_weeks_pct)} in ${d.weeks} wk · ${sgn(p.vs_year_pct)} vs year` + (p.national ? ` · US $${p.national.price.toFixed(2)}` : ""), { url: e.source_url, tone: p.active ? "active" : null })
+        : row(p.label, "No recent data", { url: e.source_url, tone: "unknown" }));
+      return rows.concat([row("Week of", d.week, { url: e.source_url })]);
+    },
+    eia_grid_demand(e, d) {
+      const gw = (mwh) => `${(mwh / 1000).toFixed(1)} GW`;
+      const rows = [row(`${d.ba} demand`, `${gw(d.demand_mwh)} · ${d.pct_of_peak.toFixed(0)}% of one-year peak`, { url: e.source_url, tone: d.pct_of_peak >= d.peak_pct ? "active" : null })];
+      if (d.forecast) rows.push(row("Day-ahead forecast", `peak ${gw(d.forecast.max_mwh)} (${d.forecast.pct_of_peak.toFixed(0)}%)`, { url: e.source_url, tone: d.forecast.pct_of_peak >= d.peak_pct ? "active" : null }));
+      return rows.concat([row("Operator", d.name || d.ba, { url: e.source_url })]);
+    },
     aviation_forecast(e, d) {
       const hhz = (ts) => new Date(ts * 1000).toISOString().slice(11, 13) + "Z";
       return d.airports.map((a) => {

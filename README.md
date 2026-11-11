@@ -80,12 +80,12 @@ The board itself is described in [`board/README.md`](board/README.md).
 | Local | NWS alerts, FEMA declarations, USGS earthquakes, SPC storm reports, SPC severe storm outlook | an alert of moderate or higher severity, a recent declaration for your county, a nearby quake of M4 or more, a significant storm report within 150 km, or an enhanced or higher severe-storm outlook for your point in the next three days |
 | Environment | NWS river flood stages, WPC flash flood outlook, USGS stream gauges, Drought Monitor, air quality, NIFC wildfires | a nearby river gauge at minor flooding or worse (observed or forecast), half the county in severe drought, US AQI of 101 or more, an uncontained fire of 100+ acres within 100 km, a moderate or higher flash flood outlook |
 | Transport | FAA airport status, airport weather (METAR), airport forecast (TAF) | a delay or ground program at an airport you list, IFR or worse weather there, or an IFR or worse forecast for later |
-| Power grid | ODIN customer outages, DOE 202(c) emergency orders, NERC alerts, links to regional operators | reported outages reach a threshold in your county or state, a new DOE emergency order (not a plant-retention renewal) |
+| Power grid | ODIN customer outages, DOE 202(c) emergency orders, NERC alerts, links to regional operators | reported outages reach a threshold in your county or state, a new DOE emergency order (not a plant-retention renewal), EIA grid demand (free key) or its day-ahead forecast near the one-year peak |
 | Finance | FDIC bank failures | a bank failure in the last 14 days |
 | Federal actions | Federal Register presidential documents | a new national emergency declaration |
 | Headlines | RSS feeds you choose (BBC and NPR by default) | never active; a stale feed shows as stale |
 | Internet outages | IODA internet outages (Georgia Tech) | a watched country has an internet outage event still running |
-| Supply chain | IMF PortWatch shipping chokepoints | a major chokepoint's weekly traffic far below its 90-day or one-year norm |
+| Supply chain | IMF PortWatch shipping chokepoints, EIA retail gasoline and diesel prices (free key) | a major chokepoint's weekly traffic far below its norm, regional fuel prices up sharply over four weeks |
 | Space | NOAA planetary K-index and scales | a geomagnetic storm of G1 or more, a radio blackout of R2 or more, a radiation storm of S1 or more |
 | Tropical | National Hurricane Center | a storm in the basin you watch |
 | Cyber | CISA Known Exploited Vulnerabilities | new entries in the last day |

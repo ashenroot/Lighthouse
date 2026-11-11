@@ -160,6 +160,32 @@ Goes **active** when at least `active_pct` percent of the county is in `active_c
 | `active_category` | `d2` | `d0` abnormally dry, `d1` moderate, `d2` severe, `d3` extreme, `d4` exceptional. |
 | `active_pct` | `50` | Percent of the county that must be in that category or worse. |
 
+### `eia_fuel_prices` — Fuel prices (panel: Supply chain)
+
+Weekly retail regular gasoline and No. 2 diesel prices for your EIA price region, with the US average beside them. Needs the free `eia` key (see [keys](keys.md)). The region follows `location.state` unless you set `region` (for example `R20` for the Midwest, `R1Z` for the Lower Atlantic, `NUS` for the whole US). EIA publishes on Mondays, so the default interval is 6 hours.
+
+Goes **active** when either fuel is up at least `rise_pct` percent over `weeks` weeks. Fails visibly when the newest data is older than `max_age_days`, when the region has no data, or when too little history exists.
+
+| Param | Default | Meaning |
+|---|---|---|
+| `region` | from state | EIA price region code. |
+| `rise_pct` | `10` | Rise over `weeks` that turns the panel active. |
+| `weeks` | `4` | Window for the rise. |
+| `max_age_days` | `14` | Age at which the data counts as failed. |
+
+### `eia_grid_demand` — Grid demand (panel: Power grid)
+
+Hourly electricity demand and the day-ahead forecast for your balancing authority (EIA-930), as a share of its one-year peak. Needs the free `eia` key and a `balancing_authority`; without one the source stays off. The peak is the 99.5th percentile of a year of hourly demand, so one bad reading cannot set it; it is fetched once a day.
+
+Goes **active** when latest demand or the next 24 hours of forecast reach `peak_pct` percent of that peak.
+
+| Param | Default | Meaning |
+|---|---|---|
+| `balancing_authority` | none | EIA code, such as `SOCO`, `PJM`, `MISO`, `ERCO`, `CISO`. |
+| `peak_pct` | `90` | Share of the peak that turns the panel active. |
+| `max_age_hours` | `12` | Age at which the latest reading counts as failed. |
+| `baseline_days` | `365` | History used for the peak. |
+
 ### `faa_airports` — Airport status (panel: Transport)
 
 Ground stops, ground delay programs, delays and closures at the airports you list, from the FAA's NAS status service. Default interval 5 minutes. **Off until you list airports.**
