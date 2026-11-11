@@ -10,15 +10,15 @@
   const PREF_KEY = "lighthouse.prefs";
   const INTERVALS = [[0, "Off"], [1, "1m"], [5, "5m"], [15, "15m"], [30, "30m"], [60, "1h"]];
   const TITLES = {
-    brief: "Keeper's Log", local: "Local", environment: "Environment", transport: "Transport", grid: "Power grid", supply: "Supply chain", finance: "Finance", federal: "Federal actions", headlines: "Headlines",
+    brief: "Keeper's Log", local: "Local", water: "Water", airfire: "Air & fire", transport: "Transport", grid: "Power grid", supply: "Supply chain", finance: "Finance", federal: "Federal actions", headlines: "Headlines",
     space: "Space weather", tropical: "Tropical", cyber: "Cyber", health: "Health",
     recalls: "Recalls", geo: "Internet outages",
   };
-  const DEFAULT_ORDER = ["brief", "local", "environment", "transport", "grid", "supply", "finance", "federal", "space", "tropical", "cyber", "health", "recalls", "geo", "headlines"];
+  const DEFAULT_ORDER = ["brief", "local", "water", "airfire", "transport", "grid", "supply", "finance", "federal", "space", "tropical", "cyber", "health", "recalls", "geo", "headlines"];
   // Tabs group the panels by theme. A panel that is in no group still appears, under "Other", so a new source is never hidden.
   // The Keeper's Log (brief) is pinned above the tabs. The "All" tab is the whole board in one page.
   const GROUPS = [
-    { id: "now", label: "Now", panels: ["local", "environment", "transport", "tropical"] },
+    { id: "now", label: "Now", panels: ["local", "water", "airfire", "transport", "tropical"] },
     { id: "infra", label: "Infrastructure", panels: ["grid", "supply", "finance", "federal", "cyber", "space"] },
     { id: "health", label: "Health", panels: ["health", "recalls"] },
     { id: "world", label: "World", panels: ["geo", "headlines"] },

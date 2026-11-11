@@ -17,7 +17,7 @@ PAGE = "https://www.airnow.gov/"
 class AirNowAqi(Source):
     id = "airnow_aqi"
     title = "Air quality (US AQI, monitors)"
-    panel = "environment"
+    panel = "airfire"
     page = PAGE
     tier = "primary"
     default_interval = 1800

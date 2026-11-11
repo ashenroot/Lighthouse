@@ -17,7 +17,7 @@ class Drought(Source):
     id = "drought"
     page = "https://droughtmonitor.unl.edu/"  # shown as the link until the first fetch succeeds
     title = "Drought, home county"
-    panel = "environment"
+    panel = "water"
     tier = "primary"
     default_interval = 21600  # the map updates weekly
     # Active when at least active_pct percent of the county is in active_category or worse.

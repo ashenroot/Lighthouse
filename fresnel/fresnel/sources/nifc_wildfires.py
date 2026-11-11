@@ -20,7 +20,7 @@ FIELDS = "IncidentName,POOState,POOCounty,IncidentSize,PercentContained,Modified
 class NifcWildfires(Source):
     id = "nifc_wildfires"
     title = "Wildfires (NIFC)"
-    panel = "environment"
+    panel = "airfire"
     page = PAGE
     tier = "primary"
     default_interval = 1800

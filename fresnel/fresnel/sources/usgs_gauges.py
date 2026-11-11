@@ -11,7 +11,7 @@ class UsgsGauges(Source):
     id = "usgs_gauges"
     page = "https://waterdata.usgs.gov/"  # shown as the link until the first fetch succeeds
     title = "Stream gauges (USGS)"
-    panel = "environment"
+    panel = "water"
     tier = "primary"
     default_interval = 900
     # sites: explicit USGS site numbers. Empty means the nearest max_sites gauges within radius_deg.

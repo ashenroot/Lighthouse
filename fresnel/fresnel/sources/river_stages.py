@@ -29,7 +29,7 @@ def _parse_time(text: str | None) -> datetime | None:
 class RiverStages(Source):
     id = "river_stages"
     title = "River flood stages (NWS)"
-    panel = "environment"
+    panel = "water"
     page = PAGE
     tier = "primary"
     default_interval = 900

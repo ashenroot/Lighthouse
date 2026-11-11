@@ -142,7 +142,7 @@ class SpcOutlook(_Outlook):
 class WpcRainfallOutlook(_Outlook):
     id = "wpc_rainfall_outlook"
     title = "Flash flood outlook (WPC)"
-    panel = "environment"
+    panel = "water"
     page = "https://www.wpc.ncep.noaa.gov/qpf/excess_rain.shtml"
     tier = "primary"
     default_interval = 1800

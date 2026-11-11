@@ -23,7 +23,7 @@ def category(aqi: float) -> str:
 class AirQuality(Source):
     id = "air_quality"
     title = "Air quality (US AQI, modeled)"
-    panel = "environment"
+    panel = "airfire"
     page = PAGE
     tier = "primary"
     default_interval = 3600

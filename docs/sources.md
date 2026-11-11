@@ -83,7 +83,7 @@ Goes **active** when an earthquake of at least `active_mag` happened within `act
 | `active_hours` | `24` | How recent that quake must be. |
 | `max_items` | `10` | Most listed. |
 
-### `usgs_gauges` — Stream gauges (panel: Environment)
+### `usgs_gauges` — Stream gauges (panel: Water)
 
 Water height at USGS gauges near you, with the change over 24 hours. By default Fresnel picks the nearest gauges itself. Default interval 15 minutes.
 
@@ -104,7 +104,7 @@ sources:
       flood_stage_ft: {"06893000": 21.0}
 ```
 
-### `river_stages` — River flood stages (panel: Environment)
+### `river_stages` — River flood stages (panel: Water)
 
 Official NWS flood categories for the river forecast gauges around you, from NOAA's National Water Prediction Service. The category is NOAA's own call against each gauge's published flood thresholds: action stage, minor, moderate or major, for the observed stage and for the forecast where the NWS issues one. Default interval 15 minutes. No key.
 
@@ -121,9 +121,9 @@ Goes **active** when any gauge is at `active_min` or worse, now or in the NWS fo
 
 This complements `usgs_gauges`, which reports raw heights and needs flood stages typed in by hand.
 
-### `airnow_aqi` — Air quality, measured (panel: Environment)
+### `airnow_aqi` — Air quality, measured (panel: Air & fire)
 
-The closest EPA AirNow monitor reading for each pollutant (PM2.5, PM10, ozone and others) within 50 miles of your location, as the hourly NowCast AQI. Needs the free `airnow` key (see [keys](keys.md)). While the key is set it **replaces** the modeled `air_quality` source, so the Environment panel shows one air quality row set, not two. Without the key, `air_quality` stays.
+The closest EPA AirNow monitor reading for each pollutant (PM2.5, PM10, ozone and others) within 50 miles of your location, as the hourly NowCast AQI. Needs the free `airnow` key (see [keys](keys.md)). While the key is set it **replaces** the modeled `air_quality` source, so the Air & fire panel shows one air quality row set, not two. Without the key, `air_quality` stays.
 
 Goes **active** when the highest pollutant AQI reaches `active_aqi`. Fails visibly when AirNow returns an error or no readings, or when the newest reading is older than `max_age_minutes`.
 
@@ -132,7 +132,7 @@ Goes **active** when the highest pollutant AQI reaches `active_aqi`. Fails visib
 | `active_aqi` | `101` | US AQI at which the panel turns active (101 is unhealthy for sensitive groups). |
 | `max_age_minutes` | `240` | Age at which the newest reading counts as failed. |
 
-### `air_quality` — Air quality (panel: Environment)
+### `air_quality` — Air quality (panel: Air & fire)
 
 The US Air Quality Index at your location, from Open-Meteo's air quality API, with the pollutant that is driving it (PM2.5, PM10 or ozone). Default interval 1 hour. No key. The scale and category names are the EPA's.
 
@@ -145,7 +145,7 @@ Goes **active** at `active_aqi` or higher. The default, 101, is "unhealthy for s
 | `active_aqi` | `101` | US AQI at which the panel turns active. |
 | `max_age_minutes` | `180` | An older model run is a failure. |
 
-### `nifc_wildfires` — Wildfires (panel: Environment)
+### `nifc_wildfires` — Wildfires (panel: Air & fire)
 
 Wildfire incidents near you from the National Interagency Fire Center's current-incident feed (WFIGS): name, size in acres, percent contained and distance. Default interval 30 minutes. No key.
 
@@ -160,7 +160,7 @@ Goes **active** when an uncontained fire of at least `min_acres` is within `radi
 | `max_age_days` | `7` | Incidents not updated for this long are ignored. |
 | `max_listed` | `6` | Most fires kept in the data. |
 
-### `drought` — Drought Monitor (panel: Environment)
+### `drought` — Drought Monitor (panel: Water)
 
 The share of your county in each drought category, from the US Drought Monitor. The map updates weekly, so the default interval is 6 hours.
 
@@ -234,7 +234,7 @@ Goes **active** when any day reaches `active_min` (default `enh`, enhanced; `slg
 | `active_min` | `enh` | `mrgl`, `slgt`, `enh`, `mdt` or `high`. |
 | `days` | `3` | How many days ahead to show, 1 to 3. |
 
-### `wpc_rainfall_outlook` — Flash flood outlook (panel: Environment)
+### `wpc_rainfall_outlook` — Flash flood outlook (panel: Water)
 
 The Weather Prediction Center's Excessive Rainfall Outlook for your location: the chance that rainfall exceeds flash flood guidance within 25 miles of a point. The categories are marginal (at least 5%), slight (15%), moderate (40%) and high (70%). It sits next to river stages, so the panel says both what rain is forecast and what the rivers are doing. Default interval 30 minutes. No key.
 
