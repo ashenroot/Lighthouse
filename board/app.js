@@ -76,7 +76,7 @@
   }
 
   // ---------- state ----------
-  const state = { snap: null, etag: null, lastOk: null, error: null, nextAt: null, loading: false, visible: [], refocus: null };
+  const state = { snap: null, etag: null, lastOk: null, error: null, nextAt: null, loading: false, visible: [], refocus: null, setupOpen: false };
   let dragId = null;
 
   // ---------- row renderers, one per source ----------
@@ -614,6 +614,26 @@
     if (state.refocus) { const el = $("tab-" + state.refocus); if (el) el.focus(); state.refocus = null; }
   }
 
+  // Sources that need a free API key are listed here, once, instead of as empty panels.
+  function renderSetup(items) {
+    const box = $("setup");
+    if (!items.length) { box.hidden = true; box.replaceChildren(); return; }
+    box.hidden = false;
+    const n = items.length;
+    const det = h("details", { class: "setup-box" },
+      h("summary", { class: "mono" }, `Setup · ${n} source${n === 1 ? " is" : "s are"} waiting for a free API key`),
+      h("div", { class: "setup-list" }, items.map((it) => {
+        const url = safeUrl(it.signup_url || "");
+        return h("div", { class: "setup-row" },
+          h("span", { class: "setup-t" }, it.title),
+          h("code", {}, it.command),
+          url ? h("a", { href: url, target: "_blank", rel: "noopener" }, `Get a free key (${it.label})`) : null);
+      })));
+    if (state.setupOpen) det.setAttribute("open", "");
+    det.addEventListener("toggle", () => { state.setupOpen = det.open; });
+    box.replaceChildren(det);
+  }
+
   // ---------- rendering ----------
   function renderHeader() {
     const s = state.snap;
@@ -659,6 +679,7 @@
     $("panels").replaceChildren(...(mine.length && !state.visible.length
       ? [h("div", { class: "empty wide-note" }, "Every panel in this tab is hidden. Click its tile above to show it again.")]
       : mine.map((id, i) => panelEl(model[id], snap, i))));
+    renderSetup(snap.setup || []);
     $("relay-info").textContent = `Fresnel relay · schema ${snap.schema} · ${Object.keys(snap.sources).length} sources`;
   }
 

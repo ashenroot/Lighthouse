@@ -14,11 +14,20 @@ class SourceError(Exception):
     """A failure whose short message is safe to show in the envelope (no URLs, no coordinates)."""
 
 
+class KeyMissing(SourceError):
+    """The source needs an API key and none is set."""
+
+
+class KeyRejected(SourceError):
+    """The provider refused the key (HTTP 401 or 403). The message never contains the key."""
+
+
 @dataclass
 class Context:
     client: httpx.AsyncClient
     location: Location
     now: Callable[[], datetime]
+    keys: Callable[[str], str | None] = lambda name: None  # name -> the key, read fresh each time
 
 
 @dataclass
@@ -41,6 +50,7 @@ class Source:
     default_params: dict[str, Any] = {}
     needs: tuple[str, ...] = ()  # params that must be non-empty, or the relay skips the source
     inherits: dict[str, str] = {}  # param -> other source id whose value of it is used when this one is empty
+    key: str | None = None  # name of the API key this source needs (see fresnel/keys.py), if any
 
     def __init__(self, cfg: SourceCfg, ctx: Context):
         self.ctx = ctx
@@ -50,6 +60,20 @@ class Source:
 
     def configured(self) -> bool:
         return all(self.params.get(k) for k in self.needs)
+
+    def api_key(self) -> str:
+        value = self.ctx.keys(self.key) if self.key else None
+        if not value:
+            raise KeyMissing(f"needs an API key: run fresnel key set {self.key}")
+        return value
+
+    def check_key(self, resp: httpx.Response) -> None:
+        """Call on a keyed response before raise_for_status: a 401 or 403 means the key was refused."""
+        if resp.status_code in (401, 403):
+            from ..keys import KEYS
+
+            label = KEYS[self.key].label if self.key in KEYS else "the provider"
+            raise KeyRejected(f"{label} rejected the key (HTTP {resp.status_code}). Replace it with: fresnel key set {self.key}")
 
     def meta(self) -> dict:
         return {

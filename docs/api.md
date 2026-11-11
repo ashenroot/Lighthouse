@@ -16,11 +16,12 @@ Everything the board needs, in one document.
                "approx_lat": 39.1, "approx_lon": -94.6},
   "panels": {"local": {"status": "nominal", "sources": ["nws_alerts", "openfema"]}, ...},
   "sources": {"nws_alerts": { ... }, ...},
+  "setup": [{"id": "...", "title": "...", "panel": "...", "key": "eia", "label": "EIA", "signup_url": "...", "command": "fresnel key set eia"}],
   "push": { "brief": { ... }, "context": { ... } }
 }
 ```
 
-`location` is public, so the coordinates are rounded to 0.1 degree. `panels` maps each panel to its worst status and its source ids; `sources` maps each enabled source id to its envelope; `push` holds what outside producers sent.
+`location` is public, so the coordinates are rounded to 0.1 degree. `panels` maps each panel to its worst status and its source ids; `sources` maps each enabled source id to its envelope; `setup` lists sources that are waiting for a free API key (see [API keys](keys.md)); they are left out of `sources` and `panels`. `push` holds what outside producers sent.
 
 The response has an `ETag`. Send it back as `If-None-Match` and an unchanged snapshot answers `304` with no body. The board does this on every refresh.
 

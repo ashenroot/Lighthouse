@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import dataclasses
+import logging
 import random
 from pathlib import Path
 from typing import Callable
@@ -25,10 +26,17 @@ from .envelope import (
     utcnow,
 )
 from .push import validate_payload
+from .keys import KEYS, KeyFormatError, load_key
 from .sources import REGISTRY, Context
-from .sources.base import SourceError
+from .sources.base import KeyRejected, SourceError
 from .store import Store
 from .tokens import TokenStore
+
+logging.getLogger("httpx").setLevel(logging.WARNING)  # its INFO lines print full URLs, and some APIs take the key in the URL
+logging.getLogger("httpcore").setLevel(logging.WARNING)
+
+RECHECK_REJECTED = 300  # seconds before trying again after a provider refuses a key, so a corrected key is picked up soon
+RECHECK_MISSING = 60
 
 
 def describe_error(exc: Exception) -> str:
@@ -65,7 +73,8 @@ class Relay:
             raise ValueError(f"unknown sources in config: {sorted(unknown)}; known: {sorted(REGISTRY)}")
 
         self._extra_clients: list[httpx.AsyncClient] = []
-        ctx = Context(client=self.client, location=config.location, now=now)
+        ctx = Context(client=self.client, location=config.location, now=now, keys=self.key)
+        self._recheck: dict[str, float] = {}
         self.sources = {}
         self.states: dict[str, SourceState] = {}
         for sid, cls in REGISTRY.items():
@@ -100,17 +109,36 @@ class Relay:
         self.mailbox = MailboxPuller(self)
         self.ntfy_brief = NtfyBrief(self)
 
+    # keys
+
+    def key(self, name: str) -> str | None:
+        try:
+            return load_key(name, self.config.server.data_dir)
+        except KeyFormatError:
+            return None
+
+    def waiting_for_key(self, sid: str) -> bool:
+        src = self.sources[sid]
+        return bool(src.key) and self.key(src.key) is None
+
     # fetching
 
     async def refresh(self, sid: str) -> None:
         src, state = self.sources[sid], self.states[sid]
+        if self.waiting_for_key(sid):
+            return  # nothing to ask the provider yet; the board lists it under Setup
         state.last_attempt = self.now()
         try:
             result = await src.fetch()
         except Exception as exc:  # a failing source must never take the relay down
             state.error = describe_error(exc)
             state.consecutive_failures += 1
+            if isinstance(exc, KeyRejected):
+                self._recheck[sid] = RECHECK_REJECTED
+            else:
+                self._recheck.pop(sid, None)
         else:
+            self._recheck.pop(sid, None)
             state.data = result.data
             state.summary = result.summary
             state.status = result.status
@@ -128,10 +156,14 @@ class Relay:
         src = self.sources[sid]
         await asyncio.sleep(min(index * 0.7, 10) + random.uniform(0, 1))
         while True:
+            if self.waiting_for_key(sid):
+                await asyncio.sleep(RECHECK_MISSING)  # a key set with `fresnel key set` is picked up within a minute
+                continue
             await self.refresh(sid)
             failures = self.states[sid].consecutive_failures
             factor = 1 if failures == 0 else min(1 + failures, 6)  # back off while failing
-            await asyncio.sleep(src.interval * factor * random.uniform(0.9, 1.1))
+            wait = self._recheck.get(sid) or src.interval * factor
+            await asyncio.sleep(wait * random.uniform(0.9, 1.1))
 
     def start(self) -> None:
         self.foghorn.start()
@@ -194,11 +226,31 @@ class Relay:
     # views
 
     def envelope(self, sid: str) -> dict:
-        return build_envelope(self.sources[sid].meta(), self.states[sid], self.now())
+        src, state = self.sources[sid], self.states[sid]
+        env = build_envelope(src.meta(), state, self.now())
+        if src.key:
+            spec = KEYS[src.key]
+            if self.waiting_for_key(sid):
+                env["status"] = "unknown"
+                env["summary"] = f"Needs a free {spec.label} key. Run: fresnel key set {spec.name}"
+                env["needs_key"] = {"key": spec.name, "label": spec.label, "signup_url": spec.signup_url,
+                                    "command": f"fresnel key set {spec.name}"}
+            elif state.last_success is None and state.error:
+                env["summary"] = state.error  # for example, the provider refused the key
+        return env
+
+    def setup_items(self) -> list[dict]:
+        """Sources waiting for an API key. They are listed on their own, not mixed into the panels."""
+        out = []
+        for sid in self.sources:
+            if self.waiting_for_key(sid):
+                env = self.envelope(sid)
+                out.append({"id": sid, "title": env["title"], "panel": env["panel"], **env["needs_key"]})
+        return out
 
     def snapshot(self) -> dict:
         now = self.now()
-        sources = {sid: self.envelope(sid) for sid in self.sources}
+        sources = {sid: self.envelope(sid) for sid in self.sources if not self.waiting_for_key(sid)}
         panels: dict[str, dict] = {}
         for sid, env in sources.items():
             panel = panels.setdefault(env["panel"], {"status": "nominal", "sources": []})
@@ -211,6 +263,7 @@ class Relay:
             "location": self.config.location.public(),
             "panels": panels,
             "sources": sources,
+            "setup": self.setup_items(),
             "push": {slot: self.push_envelope(slot) for slot in self.config.push},
         }
 
@@ -218,6 +271,8 @@ class Relay:
         now = self.now()
         rows = []
         for sid, src in self.sources.items():
+            if self.waiting_for_key(sid):
+                continue  # not a fault; the snapshot lists it under setup
             st = self.states[sid]
             rows.append(
                 {

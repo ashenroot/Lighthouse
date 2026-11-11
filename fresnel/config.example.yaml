@@ -158,3 +158,6 @@ push:
 #   topic: lighthouse-brief-<random>
 #   url: https://ntfy.sh
 #   # token: tk_...      # for a free ntfy.sh account or a protected topic
+
+# API keys are not set here. A few sources need a free key and stay off until you run: fresnel key set <name>
+# (see: fresnel key list, and docs/keys.md)

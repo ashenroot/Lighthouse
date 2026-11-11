@@ -59,6 +59,17 @@ Prints the text to paste into a briefing prompt so the job delivers its brief. S
 | `--ntfy` | Print the step that posts to your `brief_ntfy` topic instead. |
 | `--out FILE` | Write to a file (mode 600) instead of the screen. |
 
+## `fresnel key`
+
+```
+fresnel key list                # which keys are set, and which sources use them
+fresnel key set eia             # asks for the key without echoing it; saves it in the data folder, mode 600
+fresnel key test eia            # fetches once from every source that uses the key
+fresnel key remove eia
+```
+
+See [API keys](keys.md).
+
 ## `fresnel mailbox`
 
 ```

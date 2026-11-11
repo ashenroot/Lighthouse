@@ -16,6 +16,7 @@ import httpx
 import uvicorn
 
 from . import __version__
+from .keys import KEYS
 from .config import APP_DIR, Config, ConfigError, default_path, load_config
 from .push import SLOT_MODELS
 from .sources import REGISTRY
@@ -73,6 +74,9 @@ def cmd_check(args) -> None:
     skipped = sorted(set(REGISTRY) - set(relay.sources))
     if skipped:
         print(f"skipped       {', '.join(skipped)} (disabled, or needs settings such as airports)")
+    waiting = relay.setup_items()
+    if waiting:
+        print(f"keys          {len(waiting)} source(s) waiting for a free key: {', '.join(sorted({w['key'] for w in waiting}))} (see: fresnel key list)")
     tokens = relay.tokens.list()
     print(f"push tokens   {', '.join(t['name'] for t in tokens) if tokens else 'none (create one: fresnel token add brief-job --slots brief)'}")
     print(f"alerts        {'ntfy on' if relay.foghorn.enabled else 'off (set foghorn.topic to enable)'}")
@@ -87,6 +91,63 @@ def cmd_check(args) -> None:
     import asyncio
 
     asyncio.run(relay.client.aclose())
+
+
+# ---------- API keys ----------
+
+def cmd_key(args) -> None:
+    import asyncio
+    import getpass
+
+    from .keys import KEYS, KeyFormatError, key_origin, remove_key, save_key
+    from .relay import Relay
+
+    config = load(args)
+    data_dir = config.server.data_dir
+    if args.action == "list":
+        for name, spec in KEYS.items():
+            users = sorted(sid for sid, cls in REGISTRY.items() if getattr(cls, "key", None) == name)
+            origin = key_origin(name, data_dir)
+            state = {"env": "set (environment variable)", "file": "set"}.get(origin, "not set")
+            print(f"{name:8} {state:28} used by: {', '.join(users) if users else 'nothing yet'}")
+            if not origin:
+                print(f"{'':8} get one free at {spec.signup_url}, then run: fresnel key set {name}")
+        return
+    name = args.name
+    if args.action == "set":
+        value = getpass.getpass(f"{KEYS[name].label} API key: ") if sys.stdin.isatty() else sys.stdin.readline()
+        try:
+            path = save_key(name, value, data_dir)
+        except KeyFormatError as exc:
+            fail(str(exc))
+        print(f"Saved to {path} (mode 600). Only the relay reads it, and it is picked up within a minute, with no restart.")
+        print(f"Check it with: fresnel key test {name}")
+        return
+    if args.action == "remove":
+        print("Removed." if remove_key(name, data_dir) else "There was no saved key to remove.")
+        return
+    relay = Relay(config)  # test: ask each source that uses the key to fetch once
+    ids = [sid for sid, src in relay.sources.items() if src.key == name]
+    if not ids:
+        asyncio.run(relay.client.aclose())
+        fail(f"no enabled source uses the {name} key yet")
+    if not key_origin(name, data_dir):
+        asyncio.run(relay.client.aclose())
+        fail(f"no {name} key is set. Run: fresnel key set {name}")
+
+    async def run_tests() -> bool:
+        ok = True
+        for sid in ids:
+            await relay.refresh(sid)
+            env = relay.envelope(sid)
+            good = env["fetch"]["ok"]
+            ok = ok and good
+            print(f"{'ok  ' if good else 'FAIL'} {sid}: {env['summary'] if good else env['fetch']['error']}")
+        await relay.client.aclose()
+        return ok
+
+    if not asyncio.run(run_tests()):
+        sys.exit(1)
 
 
 # ---------- tokens ----------
@@ -425,6 +486,14 @@ def build_parser() -> argparse.ArgumentParser:
     ts.add_parser("list", parents=[common], help="list tokens")
     r = ts.add_parser("revoke", parents=[common], help="delete a token"); r.add_argument("name")
     p.set_defaults(func=cmd_token)
+
+    p = sub.add_parser("key", help="manage the API keys that some sources need")
+    ks = p.add_subparsers(dest="action", required=True)
+    ks.add_parser("list", parents=[common], help="show which keys are set and which sources use them")
+    for action, text in (("set", "save a key (typed without echo, or piped in)"), ("remove", "delete a saved key"), ("test", "fetch once from every source that uses the key")):
+        a = ks.add_parser(action, parents=[common], help=text)
+        a.add_argument("name", choices=sorted(KEYS))
+    p.set_defaults(func=cmd_key)
 
     p = sub.add_parser("mailbox", parents=[common], help="read the daily brief from a mailbox: set the password, test the connection")
     p.add_argument("action", choices=["set-password", "test"])

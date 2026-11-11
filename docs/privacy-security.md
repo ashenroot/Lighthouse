@@ -51,6 +51,7 @@ All under the data folder (`/opt/lighthouse/app/fresnel/data` by default):
 | Pushed content | The latest brief and context, and one archived brief per day. |
 | `tokens.json` | Push tokens as SHA-256 hashes, with names, slots and creation times. Mode 600. |
 | `mailbox.password` | The mailbox app password, if you use that option. Mode 600. |
+| `keys/<name>` | An API key, if you set one (see [API keys](keys.md)). Mode 600. Never in the snapshot, health output, error text or logs. |
 | Last message ID | Of the mailbox or ntfy message last published, so it is not published twice. |
 
 `config.yaml` holds your coordinates, the Foghorn topic, any ntfy token and any proxy credentials. `fresnel init` writes it mode 640, owned by the service account. There is no database, and no logs of visitors are kept by Fresnel itself (nginx keeps its own).
