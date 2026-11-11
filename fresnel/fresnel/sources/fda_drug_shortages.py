@@ -39,8 +39,9 @@ class FdaDrugShortages(Source):
     default_interval = 21600
     # watch: drug names (any part of the generic name, any case) to track, such as ["amoxicillin", "insulin"].
     # new_days, new_active: this many drugs newly listed within this many days turns the panel active.
+    # list: "all" includes every drug on the shortage list (the board folds it away), "none" leaves it out.
     # max_age_days: a database last updated longer ago than this is a failure.
-    default_params = {"watch": [], "new_days": 30, "new_active": 2, "max_age_days": 14, "max_listed": 6}
+    default_params = {"watch": [], "list": "all", "new_days": 30, "new_active": 2, "max_age_days": 14, "max_listed": 6}
 
     async def fetch(self) -> Result:
         records, skip, updated = [], 0, None
@@ -92,6 +93,7 @@ class FdaDrugShortages(Source):
             hits = sorted((d for d in drugs.values() if term.lower() in d["name"].lower()), key=lambda d: -RANK[d["availability"]])
             watch.append({"term": term, "listed": bool(hits), "matches": [view(d) for d in hits[:limit]],
                           "active": any(d["availability"] != "Available" for d in hits)})
+        everything = sorted(drugs.values(), key=lambda d: (-RANK[d["availability"]], d["name"].lower())) if str(self.params["list"]).lower() == "all" else []
         counts = {a: sum(1 for d in drugs.values() if d["availability"] == a) for a in RANK}
         new_active = len(new) >= int(self.params["new_active"])
         hit = [w["term"] for w in watch if w["active"]]
@@ -106,6 +108,6 @@ class FdaDrugShortages(Source):
             summary = "; ".join(parts)
         return Result(
             data={"total": len(drugs), "counts": counts, "new_days": new_days, "new": [view(d) for d in new[:limit]], "new_total": len(new),
-                  "new_active": new_active, "watch": watch, "updated": updated},
+                  "new_active": new_active, "watch": watch, "drugs": [view(d) for d in everything], "updated": updated},
             summary=summary, status="active" if (hit or new_active) else "nominal", source_url=PAGE,
         )

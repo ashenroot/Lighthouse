@@ -76,7 +76,7 @@
   }
 
   // ---------- state ----------
-  const state = { snap: null, etag: null, lastOk: null, error: null, nextAt: null, loading: false, visible: [], refocus: null, setupOpen: false };
+  const state = { snap: null, etag: null, lastOk: null, error: null, nextAt: null, loading: false, visible: [], refocus: null, setupOpen: false, folds: {} };
   let dragId = null;
 
   // ---------- row renderers, one per source ----------
@@ -86,6 +86,14 @@
     const cls = "row" + (o.tone ? " t-" + o.tone : "") + (o.stale ? " stale" : "") + (o.stack ? " stack" : "");
     const kids = [h("span", { class: "k" }, label), h("span", { class: "v" }, value)];
     return url ? h("a", { class: cls, href: url, target: "_blank", rel: "noopener" }, kids) : h("div", { class: cls }, kids);
+  }
+
+  // A long list folded behind one line. Whether it is open survives the redraw on each refresh.
+  function fold(key, title, rows) {
+    const det = h("details", { class: "fold" }, h("summary", { class: "mono" }, title), rows);
+    if (state.folds[key]) det.setAttribute("open", "");
+    det.addEventListener("toggle", () => { state.folds[key] = det.open; });
+    return det;
   }
 
   const outlookRows = (e, d, label) => d.days.map((day) => {
@@ -270,6 +278,8 @@
         : row(`Watching ${w.term}`, clip(w.matches.map((m) => `${m.name}: ${m.availability.toLowerCase()}`).join("; "), 90), { url: e.source_url, tone: tone(w.matches[0].availability) })));
       if (!d.new_total) rows.push(row(`New in ${d.new_days} days`, "None", { url: e.source_url }));
       d.new.forEach((m) => rows.push(row(`New ${m.posted}`, clip(`${m.name} · ${m.availability.toLowerCase()}`, 80), { url: e.source_url, tone: d.new_active ? "active" : null })));
+      if (d.drugs.length) rows.push(fold("fda_drugs", `All ${d.drugs.length} drugs on the list`, d.drugs.map((m) =>
+        row(clip(m.name, 48), `${m.availability.toLowerCase()}${m.categories.length ? " · " + m.categories.slice(0, 2).join(", ") : ""}`, { url: e.source_url }))));
       return rows;
     },
     cdc_wastewater(e, d) {

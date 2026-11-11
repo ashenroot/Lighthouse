@@ -15,6 +15,11 @@ async def test_records_group_by_drug_and_new_listings_turn_it_active(config, clo
     assert env["status"] == "active" and env["summary"] == "4 drugs on the shortage list (2 with an unavailable product, 1 limited); 2 newly listed in 30 days"
     assert d["counts"] == {"Available": 1, "Limited Availability": 1, "Unavailable": 2}  # the "Unvailable" typo in the data still counts
     assert [x["name"] for x in d["new"]] == ["Amoxicillin Oral Suspension", "Ifosfamide Injection"]
+    assert [x["name"] for x in d["drugs"]] == ["Amoxicillin Oral Suspension", "Ifosfamide Injection", "Lisdexamfetamine Dimesylate Capsule", "Carboplatin Injection"]
+    config.sources["fda_drug_shortages"] = SourceCfg(params={"list": "none"})
+    r = Relay(config, client=make_client(), now=clock)
+    await r.refresh("fda_drug_shortages")
+    assert r.envelope("fda_drug_shortages")["data"]["drugs"] == []
     ifos = next(x for x in d["new"] if x["name"].startswith("Ifos"))
     assert ifos["availability"] == "Unavailable" and ifos["presentations"] == 3 and ifos["posted"] == "2026-09-20"
 
