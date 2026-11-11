@@ -272,6 +272,20 @@ sources:
         - {name: "Georgia Power outages", url: "https://outagemap.georgiapower.com"}
 ```
 
+### `ioda_outages` — Internet outages (panel: Global context)
+
+Country-level internet outage events from IODA, Georgia Tech's Internet Outage Detection and Analysis, which combines BGP routing, active probing, a network telescope and Google traffic. You choose the countries to watch; the defaults are Ukraine, Russia, Iran, Israel, Taiwan and Venezuela. Default interval 30 minutes. No key.
+
+A watched country with an event still running (its end within `ongoing_slack_min` of now) and lasting at least `min_minutes` goes **active**. Each row shows whether the event is running, how long it has lasted, and which measurement saw it. Scores have no fixed scale, so they are not shown or rated. Duration matters: an event lasting many days is usually a chronic condition (a blocked service, for example), while a new event in a normally steady country is the signal. A country that could not be checked is named in the summary. If none can be checked, or IODA returns an error, the source fails (grey), never calm.
+
+| Param | Default | Meaning |
+|---|---|---|
+| `countries` | UA, RU, IR, IL, TW, VE | Two-letter country codes. |
+| `window_hours` | `24` | How far back events are looked for. |
+| `ongoing_slack_min` | `30` | An event ending within this many minutes of now counts as running. |
+| `min_minutes` | `30` | Shorter events are listed but do not turn the panel active. |
+| `max_listed` | `8` | Events listed. |
+
 ### `chokepoints` — Shipping chokepoints (panel: Supply chain)
 
 Daily vessel transits through major shipping chokepoints, from the IMF's PortWatch, which counts them from satellite ship-tracking data. The default set is the Panama Canal, Suez Canal, Bab el-Mandeb Strait, Strait of Hormuz, Malacca Strait and Taiwan Strait. Default interval 6 hours. No key.

@@ -12,7 +12,7 @@
   const TITLES = {
     brief: "Keeper's Log", local: "Local", environment: "Environment", transport: "Transport", grid: "Power grid", supply: "Supply chain", finance: "Finance", federal: "Federal actions", headlines: "Headlines",
     space: "Space weather", tropical: "Tropical", cyber: "Cyber", health: "Health",
-    recalls: "Recalls", geo: "Context headlines",
+    recalls: "Recalls", geo: "Global context",
   };
   const DEFAULT_ORDER = ["brief", "local", "environment", "transport", "grid", "supply", "finance", "federal", "space", "tropical", "cyber", "health", "recalls", "geo", "headlines"];
   const STATE_TEXT = { nominal: "● NOMINAL", active: "▲ ACTIVE", unknown: "? UNKNOWN", info: "ℹ INFO" };
@@ -128,6 +128,15 @@
         return row(c.name, bits.join(" · "), { url: e.source_url, tone: c.active ? "active" : "ok" });
       });
       rows.push(row("Data through", `${d.through} (${d.age_days} days ago)`, { url: e.source_url }));
+      return rows;
+    },
+    ioda_outages(e, d) {
+      if (!d.events.length) return [row("Internet outages", e.summary, { url: e.source_url })];
+      const span = (s) => { const m = Math.floor(s / 60); return m < 90 ? `${m} min` : m < 2880 ? `${Math.floor(m / 60)} h` : `${Math.floor(m / 1440)} days`; };
+      const rows = d.events.map((ev) => row(ev.country,
+        `${ev.ongoing ? "running " : "ended · lasted "}${span(ev.duration_s)} · ${ev.source}`,
+        { url: e.source_url, tone: ev.active ? "active" : null }));
+      if (d.unchecked.length) rows.push(row("Not checked", d.unchecked.join(", "), { url: e.source_url, tone: "unknown" }));
       return rows;
     },
     air_quality(e, d) {

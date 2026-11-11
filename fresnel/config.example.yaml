@@ -87,6 +87,10 @@ sources:
       # feeds: choose your own. Each takes name, url, and optionally keywords (keep only matching items), exclude_url (drop links containing any of these strings) and max_items.
       # The defaults are BBC World and NPR. A feed whose newest item is older than stale_days is reported as stale.
       stale_days: 3
+  ioda_outages:
+    params:
+      countries: [UA, RU, IR, IL, TW, VE]   # two-letter codes to watch
+      min_minutes: 30                       # shorter events are listed but do not turn the panel active
   chokepoints:
     params:
       # names: [Panama Canal, Suez Canal, Strait of Hormuz]   # PortWatch chokepoint names; the default is six major ones

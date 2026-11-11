@@ -104,6 +104,22 @@ BBC_RSS = rss(("Flood warnings across the north", "Wed, 14 Oct 2026 10:00:00 GMT
 OLD_RSS = rss(("Top story from 2023", "Mon, 01 May 2023 12:00:00 GMT"))
 
 
+def _ioda(request):
+    """Mock IODA events: Ukraine has a 3-hour outage running, Russia one that ended 5 hours ago, Taiwan fails."""
+    q = request.url.params
+    until = int(q["until"])
+    code = q["entityCode"]
+    if code == "TW":
+        return httpx.Response(503, text="busy")
+    events = {
+        "UA": [{"location": "country/UA", "start": until - 10800, "duration": 10800, "uncertainty": None, "method": "sarima",
+                "datasource": "bgp", "status": 0, "fraction": None, "score": 5400.5, "location_name": "Ukraine", "overlaps_window": True}],
+        "RU": [{"location": "country/RU", "start": until - 25200, "duration": 7200, "uncertainty": None, "method": "sarima",
+                "datasource": "ping-slash24", "status": 0, "fraction": None, "score": 900.0, "location_name": "Russia", "overlaps_window": True}],
+    }.get(code, [])
+    return {"type": "outages.events", "error": None, "data": events}
+
+
 def _ms(delta: timedelta) -> int:
     return int((NOW - delta).timestamp() * 1000)
 
@@ -238,6 +254,7 @@ def feeds() -> dict:
         "www.spc.noaa.gov": SPC_CSV,
         "feeds.bbci.co.uk": BBC_RSS,
         "feeds.npr.org": OLD_RSS,
+        "api.ioda.inetintel.cc.gatech.edu": _ioda,
         "services3.arcgis.com": lambda request: {"features": [dict(f) for f in FIRES]},
         "air-quality-api.open-meteo.com": {"current": {
             "time": "2026-10-14T11:00", "us_aqi": 112, "pm2_5": 41.0, "pm10": 50.0, "ozone": 60.0,

@@ -20,6 +20,7 @@ from .nws_alerts import NwsAlerts
 from .odin_outages import OdinOutages
 from .openfema import OpenFema
 from .recalls import CpscRecalls, FdaRecalls
+from .ioda_outages import IodaOutages
 from .river_stages import RiverStages
 from .rss_headlines import RssHeadlines
 from .spc_storm_reports import SpcStormReports
@@ -32,7 +33,7 @@ REGISTRY: dict[str, type[Source]] = {
     cls.id: cls for cls in (
         NwsAlerts, OpenFema, UsgsQuakes, UsgsGauges, Drought, FaaAirports, AviationWeather, CdcWastewater,
         FdaRecalls, CpscRecalls, CisaKev, SwpcKp, SwpcScales, NhcStorms,
-        OdinOutages, Doe202c, NercAlerts, GridOperators, RiverStages, Chokepoints, AirQuality, NifcWildfires, FdicFailures, FederalRegister, SpcStormReports, RssHeadlines,
+        OdinOutages, Doe202c, NercAlerts, GridOperators, RiverStages, Chokepoints, AirQuality, NifcWildfires, FdicFailures, FederalRegister, SpcStormReports, RssHeadlines, IodaOutages,
     )
 }
 

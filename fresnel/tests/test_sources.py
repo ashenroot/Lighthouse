@@ -516,3 +516,47 @@ async def test_rss_headlines_says_why_a_feed_failed(config, clock):
     env = r.envelope("rss_headlines")
     assert {f["name"]: f["problem"] for f in env["data"]["feeds"]} == {"BBC": None, "STAT": "HTTP 403", "Page": "not a readable feed"}
     assert env["summary"] == "2 headlines from 1 feed; STAT: HTTP 403, Page: not a readable feed"
+
+
+@pytest.mark.asyncio
+async def test_ioda_outages_running_event_is_active_and_a_failed_country_is_named(config, clock):
+    r = Relay(config, client=make_client(), now=clock)
+    await r.refresh("ioda_outages")
+    env = r.envelope("ioda_outages")
+    assert env["status"] == "active"
+    assert env["summary"] == "Ukraine: outage running 3 h (BGP routing); TW not checked"
+    data = env["data"]
+    assert data["ongoing"] == 1 and data["unchecked"] == ["TW"]
+    assert [e["code"] for e in data["events"]] == ["UA", "RU"] and data["events"][1]["ongoing"] is False
+
+
+@pytest.mark.asyncio
+async def test_ioda_outages_finished_events_are_nominal_and_bad_responses_fail(config, clock):
+    from fresnel.config import SourceCfg
+    config.sources["ioda_outages"] = SourceCfg(params={"countries": ["ru", "IR"]})
+    r = Relay(config, client=make_client(), now=clock)
+    await r.refresh("ioda_outages")
+    env = r.envelope("ioda_outages")
+    assert env["status"] == "nominal" and env["summary"] == "1 recent outage event in watched countries, none running now"
+    config.sources["ioda_outages"] = SourceCfg(params={"countries": ["IR"]})
+    r = Relay(config, client=make_client(), now=clock)
+    await r.refresh("ioda_outages")
+    assert r.envelope("ioda_outages")["summary"] == "No outage events in the last 24 h across 1 watched country"
+    config.sources["ioda_outages"] = SourceCfg(params={"countries": ["TW"]})
+    r = Relay(config, client=make_client(), now=clock)
+    await r.refresh("ioda_outages")
+    assert r.envelope("ioda_outages")["fetch"]["error"] == "IODA did not answer for any watched country"
+    config.sources["ioda_outages"] = SourceCfg(params={"countries": ["Ukraine"]})
+    r = Relay(config, client=make_client(), now=clock)
+    await r.refresh("ioda_outages")
+    assert r.envelope("ioda_outages")["fetch"]["error"] == "countries must be two-letter codes"
+
+
+@pytest.mark.asyncio
+async def test_ioda_outages_api_error_field_is_a_failure(config, clock):
+    def bad(request):
+        return {"type": "outages.events", "error": "'from' timestamp must be set", "data": None}
+    r = Relay(config, client=make_client(data={**feeds(), "api.ioda.inetintel.cc.gatech.edu": bad}), now=clock)
+    await r.refresh("ioda_outages")
+    env = r.envelope("ioda_outages")
+    assert env["status"] == "unknown" and env["fetch"]["error"].startswith("IODA reported an error for UA")
