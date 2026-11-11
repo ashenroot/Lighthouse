@@ -37,7 +37,7 @@ async def test_watch_list_active_listed_and_not_listed(config, clock):
     r = Relay(config, client=make_client(), now=clock)
     await r.refresh("fda_drug_shortages")
     env = r.envelope("fda_drug_shortages")
-    assert env["status"] == "nominal" and env["summary"].endswith("watching carboplatin listed, insulin not listed")
+    assert env["status"] == "nominal" and env["summary"].endswith("watching 2, 1 on the list (carboplatin)")
 
 
 @pytest.mark.asyncio

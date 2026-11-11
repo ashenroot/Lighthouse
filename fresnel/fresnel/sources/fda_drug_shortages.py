@@ -101,7 +101,8 @@ class FdaDrugShortages(Source):
         parts = [f"{len(drugs)} drugs on the shortage list ({counts['Unavailable']} with an unavailable product, {counts['Limited Availability']} limited)"]
         parts.append(f"{len(new)} newly listed in {new_days} days")
         if watch:
-            parts.append("watching " + ", ".join(f"{w['term']} {'short' if w['active'] else 'listed' if w['listed'] else 'not listed'}" for w in watch))
+            listed = [w["term"] for w in watch if w["listed"]]
+            parts.append(f"watching {len(watch)}, " + (f"{len(listed)} on the list ({', '.join(listed)})" if listed else "none on the list"))
         if hit:
             summary = "Watched drug short: " + ", ".join(hit) + "; " + parts[0]
         else:
