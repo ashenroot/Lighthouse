@@ -273,9 +273,10 @@
     fda_drug_shortages(e, d) {
       const tone = (a) => (a === "Unavailable" ? "active" : a === "Limited Availability" ? "active" : "ok");
       const rows = [row("On shortage list", `${d.total} drugs · ${d.counts.Unavailable} with an unavailable product · ${d.counts["Limited Availability"]} limited`, { url: e.source_url })];
-      d.watch.forEach((w) => rows.push(!w.listed
-        ? row(`Watching ${w.term}`, "Not on the shortage list", { url: e.source_url, tone: "ok" })
-        : row(`Watching ${w.term}`, clip(w.matches.map((m) => `${m.name}: ${m.availability.toLowerCase()}`).join("; "), 90), { url: e.source_url, tone: tone(w.matches[0].availability) })));
+      const quiet = d.watch.filter((w) => !w.listed);
+      d.watch.filter((w) => w.listed).forEach((w) => rows.push(
+        row(`Watching ${w.term}`, clip(w.matches.map((m) => `${m.name}: ${m.availability.toLowerCase()}`).join("; "), 90), { url: e.source_url, tone: tone(w.matches[0].availability) })));
+      if (quiet.length) rows.push(row(`Watching ${quiet.length} drug${quiet.length === 1 ? "" : "s"}`, `Not on the shortage list: ${clip(quiet.map((w) => w.term).join(", "), 120)}`, { url: e.source_url, tone: "ok", stack: true }));
       if (!d.new_total) rows.push(row(`New in ${d.new_days} days`, "None", { url: e.source_url }));
       d.new.forEach((m) => rows.push(row(`New ${m.posted}`, clip(`${m.name} · ${m.availability.toLowerCase()}`, 80), { url: e.source_url, tone: d.new_active ? "active" : null })));
       if (d.drugs.length) rows.push(fold("fda_drugs", `All ${d.drugs.length} drugs on the list`, d.drugs.map((m) =>
