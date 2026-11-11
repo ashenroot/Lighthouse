@@ -253,6 +253,15 @@
         return row(a.airport, `${a.worst} through ${a.hours} h${maybe}`, { url: e.source_url, tone: a.worst === "VFR" && !a.possible ? "ok" : null });
       });
     },
+    cdc_hospital_load(e, d) {
+      const rows = [];
+      if (d.beds_pct != null) rows.push(row("Inpatient beds", `${d.beds_pct.toFixed(0)}% occupied`, { url: e.source_url, tone: d.beds_active ? "active" : null }));
+      if (d.icu_pct != null) rows.push(row("ICU beds", `${d.icu_pct.toFixed(0)}% occupied`, { url: e.source_url, tone: d.icu_active ? "active" : null }));
+      d.pathogens.forEach((p) => rows.push(p.patients == null
+        ? row(p.pathogen, "No data", { url: e.source_url, tone: "unknown" })
+        : row(p.pathogen, `${p.patients.toLocaleString()} in hospital` + (p.change_pct == null ? "" : ` · ${p.change_pct >= 0 ? "+" : ""}${p.change_pct.toFixed(0)}% in ${d.weeks} wk`), { url: e.source_url, tone: p.rising ? "active" : null })));
+      return rows.concat([row("Week ending", d.week_end, { url: e.source_url })]);
+    },
     cdc_wastewater(e, d) {
       const names = Object.keys(d.pathogens);
       return names.map((n) =>

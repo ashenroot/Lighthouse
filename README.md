@@ -89,7 +89,7 @@ The board itself is described in [`board/README.md`](board/README.md).
 | Space | NOAA planetary K-index and scales | a geomagnetic storm of G1 or more, a radio blackout of R2 or more, a radiation storm of S1 or more |
 | Tropical | National Hurricane Center | a storm in the basin you watch |
 | Cyber | CISA Known Exploited Vulnerabilities | new entries in the last day |
-| Health | CDC wastewater | half the state's sites at high levels |
+| Health | CDC wastewater, CDC hospital bed occupancy and COVID, flu and RSV patients | half the state's wastewater sites at high levels, hospital beds 85% full, a respiratory pathogen's hospital patients up 50% in two weeks |
 | Recalls | FDA and CPSC | a Class I food recall reaching your state |
 | Keeper's Log | your daily brief | never; it shows your rated sections |
 

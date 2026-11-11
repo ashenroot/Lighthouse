@@ -210,6 +210,17 @@ def _airnow(request):
     return [row("PM2.5", 36), row("OZONE", 35), row("PM10", 16), row("NO2", -999)]
 
 
+def _cdc_hospital(request):
+    """Mock the CDC NHSN weekly hospital table (newest first, numbers as strings, like Socrata)."""
+    if request.url.params.get("jurisdiction") != "MO":
+        return []
+    flu, covid, rsv = [90, 60, 45, 44, 40, 38], [100, 105, 110, 100, 98, 99], [25, 24, 20, 19, 18, 12]
+    rows = [{"weekendingdate": f"{(date(2026, 10, 10) - timedelta(weeks=i)).isoformat()}T00:00:00.000", "pctinptbedsocc": "80.2000",
+             "pcticubedsocc": "70.5", "totalconfc19hosppats": f"{covid[i]}.0", "totalconffluhosppats": f"{flu[i]}.0",
+             "totalconfrsvhosppats": f"{rsv[i]}.0"} for i in range(6)]
+    return rows[:int(request.url.params.get("$limit", 6))]
+
+
 def _ms(delta: timedelta) -> int:
     return int((NOW - delta).timestamp() * 1000)
 
@@ -306,6 +317,7 @@ def feeds() -> dict:
              "variable": {"noDataValue": -999999.0},
              "values": [{"value": []}]},
         ]}},
+        "/resource/ua7e-t2fy.json": _cdc_hospital,
         "data.cdc.gov": [
             {"state_territory": "Georgia", "week_end": "2026-10-03T00:00:00.000", "pathogen_target": "SARS-CoV-2", "site_wval_category": "High"},
             {"state_territory": "Georgia", "week_end": "2026-10-03T00:00:00.000", "pathogen_target": "SARS-CoV-2", "site_wval_category": "Very High"},

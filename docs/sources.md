@@ -259,6 +259,21 @@ Goes **active** when a prevailing forecast period reaches `active_min` within th
 | `active_min` | `IFR` | `MVFR`, `IFR` or `LIFR`: the forecast category at which the airport counts as active. |
 | `hours` | `12` | How far ahead to look. |
 
+### `cdc_hospital_load` — Hospital load (panel: Health)
+
+Weekly statewide hospital data from the CDC's National Healthcare Safety Network: inpatient and ICU bed occupancy, and the number of patients in hospital with COVID-19, influenza and RSV, compared with the same state two weeks earlier. The state comes from `location.state`. The default interval is 6 hours because the data updates weekly.
+
+Goes **active** when inpatient or ICU occupancy reaches its threshold, or when a pathogen's hospitalized patients rise at least `rise_pct` percent over `weeks` weeks with at least `min_patients` in hospital now. Fails visibly when the newest week is older than `max_age_days` or the state has no data.
+
+| Param | Default | Meaning |
+|---|---|---|
+| `occupancy_pct` | `85` | Inpatient bed occupancy that turns the panel active. |
+| `icu_pct` | `85` | ICU bed occupancy that turns the panel active. |
+| `rise_pct` | `50` | Rise in a pathogen's hospitalized patients over `weeks`. |
+| `weeks` | `2` | Comparison window. |
+| `min_patients` | `50` | Patients in hospital now, so a small count cannot trip the rise rule. |
+| `max_age_days` | `21` | Age at which the data counts as failed. |
+
 ### `cdc_wastewater` — Wastewater (panel: Health)
 
 Viral activity in your state's wastewater, from the CDC: SARS-CoV-2, influenza A and RSV. The data updates weekly, so the default interval is 6 hours.

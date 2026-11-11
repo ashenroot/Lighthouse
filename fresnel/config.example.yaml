@@ -127,6 +127,12 @@ sources:
     params:
       active_category: d2             # d0..d4; with active_pct, how much of the county triggers active
       active_pct: 50
+  cdc_hospital_load:
+    params:
+      occupancy_pct: 85                 # statewide inpatient bed occupancy that turns the panel active
+      icu_pct: 85                       # the same for ICU beds
+      rise_pct: 50                      # COVID, flu or RSV hospital patients up this much over `weeks`...
+      min_patients: 50                  # ...with at least this many in hospital now
   cdc_wastewater:
     params:
       active_share: 0.5               # share of state sites at High or above that triggers active
