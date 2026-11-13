@@ -17,7 +17,7 @@ from .base import Result, Source, SourceError
 
 API = "https://api.ioda.inetintel.cc.gatech.edu/v2/outages/events"
 PAGE = "https://ioda.inetintel.cc.gatech.edu/"
-DEFAULT_COUNTRIES = ["UA", "RU", "IR", "IL", "TW", "VE"]
+DEFAULT_COUNTRIES = ["US", "UA", "RU", "IR", "IL", "TW", "VE"]
 DATASOURCES = {"bgp": "BGP routing", "ping-slash24": "active probing", "merit-nt": "network telescope", "gtr": "Google traffic"}
 NAMES = {
     "UA": "Ukraine", "RU": "Russia", "IR": "Iran", "IL": "Israel", "TW": "Taiwan", "VE": "Venezuela", "CN": "China", "KP": "North Korea",

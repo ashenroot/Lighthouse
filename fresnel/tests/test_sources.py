@@ -3,6 +3,7 @@ from datetime import timedelta
 import pytest
 
 from conftest import SPC_CSV, make_client, feeds
+from fresnel.config import SourceCfg
 from fresnel.relay import Relay, describe_error
 from fresnel.sources.swpc_kp import g_scale
 import httpx
@@ -124,7 +125,8 @@ def test_disabled_source(config, clock):
 def test_source_skipped_until_configured(config, clock):
     config.sources.pop("faa_airports")
     r = Relay(config, client=make_client(), now=clock)
-    assert "faa_airports" not in r.sources
+    assert "aviation_weather" not in r.sources  # airport weather has no airports to look up
+    assert "faa_airports" in r.sources  # the nationwide view needs none
 
 
 async def test_source_with_a_proxy_gets_its_own_client(config, clock):
@@ -529,9 +531,9 @@ async def test_ioda_outages_running_event_is_active_and_a_failed_country_is_name
     assert data["ongoing"] == 1 and data["unchecked"] == ["TW"]
     assert [e["code"] for e in data["events"]] == ["UA", "RU"] and data["events"][1]["ongoing"] is False
     states = {c["code"]: c["state"] for c in data["countries"]}
-    assert [c["code"] for c in data["countries"]] == ["UA", "RU", "IR", "IL", "TW", "VE"]
-    assert states == {"UA": "outage", "RU": "ended", "IR": "clear", "IL": "clear", "TW": "unchecked", "VE": "clear"}
-    assert data["countries"][1]["ended_ago_s"] == 18000 and data["countries"][2]["name"] == "Iran"
+    assert [c["code"] for c in data["countries"]] == ["US", "UA", "RU", "IR", "IL", "TW", "VE"]
+    assert states == {"US": "clear", "UA": "outage", "RU": "ended", "IR": "clear", "IL": "clear", "TW": "unchecked", "VE": "clear"}
+    assert data["countries"][2]["ended_ago_s"] == 18000 and data["countries"][3]["name"] == "Iran"
 
 
 @pytest.mark.asyncio
@@ -563,7 +565,7 @@ async def test_ioda_outages_api_error_field_is_a_failure(config, clock):
     r = Relay(config, client=make_client(data={**feeds(), "api.ioda.inetintel.cc.gatech.edu": bad}), now=clock)
     await r.refresh("ioda_outages")
     env = r.envelope("ioda_outages")
-    assert env["status"] == "unknown" and env["fetch"]["error"].startswith("IODA reported an error for UA")
+    assert env["status"] == "unknown" and env["fetch"]["error"].startswith("IODA reported an error for US")
 
 
 @pytest.mark.asyncio
@@ -678,3 +680,52 @@ async def test_usgs_gauges_show_everything_while_river_stages_is_not_working(con
     await r.refresh("river_stages")  # fails
     await r.refresh("usgs_gauges")
     assert [g["site"] for g in r.envelope("usgs_gauges")["data"]["gauges"]] == ["111"]
+
+
+NAS_NATIONAL = (
+    "<AIRPORT_STATUS_INFORMATION><Delay_type><Name>Ground Stop Programs</Name><Ground_Stop_List>"
+    "<Program><ARPT>YUL</ARPT><Reason>other</Reason></Program></Ground_Stop_List></Delay_type>"
+    "<Delay_type><Name>Ground Delay Programs</Name><Ground_Delay_List>"
+    "<Ground_Delay><ARPT>SFO</ARPT><Reason>wind</Reason><Avg>2 hours and 18 minutes</Avg></Ground_Delay>"
+    "<Ground_Delay><ARPT>BOS</ARPT><Reason>airport volume</Reason><Avg>26 minutes</Avg></Ground_Delay></Ground_Delay_List></Delay_type>"
+    "<Delay_type><Name>General Arrival/Departure Delay Info</Name><Arrival_Departure_Delay_List>"
+    "<Delay><ARPT>IAH</ARPT><Reason>TM Initiatives:STOP:EQ</Reason><Arrival_Departure Type=\"Departure\"><Min>2 hours and 31 minutes</Min>"
+    "<Max>2 hours and 45 minutes</Max><Trend>Increasing</Trend></Arrival_Departure></Delay>"
+    "<Delay><ARPT>ORD</ARPT><Reason>EQ:FAA</Reason><Arrival_Departure Type=\"Departure\"><Min>3 hours and 1 minute</Min>"
+    "<Max>3 hours and 15 minutes</Max><Trend>Increasing</Trend></Arrival_Departure></Delay></Arrival_Departure_Delay_List></Delay_type>"
+    "<Delay_type><Name>Airport Closures</Name><Airport_Closure_List><Airport><ARPT>SNA</ARPT><Reason>NOTAM EQ</Reason></Airport></Airport_Closure_List></Delay_type>"
+    "</AIRPORT_STATUS_INFORMATION>"
+)
+
+
+@pytest.mark.asyncio
+async def test_faa_national_view_flags_equipment_problems_at_airports_you_do_not_watch(config, clock):
+    r = Relay(config, client=make_client(data={**feeds(), "nasstatus.faa.gov": NAS_NATIONAL}), now=clock)
+    await r.refresh("faa_airports")
+    env = r.envelope("faa_airports")
+    n = env["data"]["national"]
+    assert env["status"] == "active"  # MCI itself is fine; the equipment problem is elsewhere
+    assert env["summary"] == "Nationwide: equipment problems at IAH, ORD"
+    assert [e["airport"] for e in n["equipment"]] == ["IAH", "ORD"]  # closures are ignored, so SNA is not counted
+    assert n["counts"] == {"stops": 1, "ground_delay_programs": 2, "long_delays": 3, "equipment_airports": 2}
+    assert [(d["airport"], d["minutes"], d["trend"]) for d in n["long_delays"]] == [("ORD", 195, "Increasing"), ("IAH", 165, "Increasing"), ("SFO", 138, None)]
+    assert env["data"]["events"] == []
+
+
+@pytest.mark.asyncio
+async def test_faa_national_thresholds_and_a_quiet_day(config, clock):
+    config.sources["faa_airports"] = SourceCfg(params={"airports": ["mci"], "equip_active": 3})
+    r = Relay(config, client=make_client(data={**feeds(), "nasstatus.faa.gov": NAS_NATIONAL}), now=clock)
+    await r.refresh("faa_airports")
+    env = r.envelope("faa_airports")
+    assert env["status"] == "nominal" and env["summary"] == "No delays at MCI; nationwide 1 ground stop, 3 long delays"
+    config.sources["faa_airports"] = SourceCfg(params={"airports": ["mci"], "stops_active": 1})
+    r = Relay(config, client=make_client(data={**feeds(), "nasstatus.faa.gov": NAS_NATIONAL}), now=clock)
+    await r.refresh("faa_airports")
+    assert r.envelope("faa_airports")["summary"] == "Nationwide: equipment problems at IAH, ORD; 1 ground stops"
+    quiet = "<AIRPORT_STATUS_INFORMATION></AIRPORT_STATUS_INFORMATION>"
+    config.sources["faa_airports"] = SourceCfg(params={})
+    r = Relay(config, client=make_client(data={**feeds(), "nasstatus.faa.gov": quiet}), now=clock)
+    await r.refresh("faa_airports")
+    env = r.envelope("faa_airports")
+    assert env["status"] == "nominal" and env["summary"] == "Nationwide: 0 ground stops, 0 long delays"

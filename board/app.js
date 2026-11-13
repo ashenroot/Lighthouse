@@ -216,11 +216,16 @@
       ];
     },
     faa_airports(e, d) {
-      if (!d.events.length) return [row(d.airports.join(", "), "No delays", { url: e.source_url, tone: "ok" })];
-      return d.events.map((x) => {
+      const own = !d.airports.length ? [] : !d.events.length ? [row(d.airports.join(", "), "No delays", { url: e.source_url, tone: "ok" })] : d.events.map((x) => {
         const closure = x.kind.toLowerCase().includes("closure");
         return row(x.airport, `${x.kind}${x.reason && !closure ? ": " + clip(x.reason, 40) : ""}`, { url: e.source_url, tone: closure ? null : "active" });
       });
+      const n = d.national, c = n.counts, hm = (m) => (m >= 60 ? `${Math.floor(m / 60)}h${m % 60 ? String(m % 60).padStart(2, "0") : ""}` : `${m}m`);
+      const rows = [row("Nationwide", `${c.stops} ground stop${c.stops === 1 ? "" : "s"} · ${c.ground_delay_programs} delay programs · ${c.long_delays} long delays`, { url: e.source_url, tone: n.active ? "active" : null })];
+      if (n.equipment.length) rows.push(row("Equipment", n.equipment.map((x) => x.airport).join(", "), { url: e.source_url, tone: n.equipment.length >= n.thresholds.equip_active ? "active" : null }));
+      if (n.stops.length) rows.push(row("Ground stops", clip(n.stops.map((x) => x.airport).join(", "), 90), { url: e.source_url, tone: c.stops >= n.thresholds.stops_active ? "active" : null }));
+      if (n.long_delays.length) rows.push(row("Longest delays", clip(n.long_delays.map((x) => `${x.airport} ${hm(x.minutes)}${x.trend ? " " + x.trend.toLowerCase() : ""}`).join(", "), 90), { url: e.source_url, stack: true }));
+      return own.concat(rows);
     },
     aviation_weather(e, d) {
       return d.airports.map((a) => {

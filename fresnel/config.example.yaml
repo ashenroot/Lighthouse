@@ -55,7 +55,9 @@ sources:
       # links: [{name: "My utility", url: "https://example.org/outages"}]
   faa_airports:
     params:
-      airports: [MCI]                 # FAA codes to watch; the source stays off until you list some
+      airports: [MCI]                 # FAA codes to watch (optional; the nationwide view works without any)
+      # equip_active: 2               # airports with equipment-caused delays that turn the panel active
+      # stops_active: 5               # airports with ground stops that turn it active
     # proxy: socks5h://127.0.0.1:1080                 # fetch just this source through a proxy (http, https or socks5), if the
     #                                                  # publisher blocks your server's network (HTTP 403)
   aviation_weather:
@@ -105,7 +107,7 @@ sources:
       stale_days: 3
   ioda_outages:
     params:
-      countries: [UA, RU, IR, IL, TW, VE]   # two-letter codes to watch
+      countries: [US, UA, RU, IR, IL, TW, VE]   # two-letter codes to watch
       min_minutes: 30                       # shorter events are listed but do not turn the panel active
   eia_fuel_prices:                      # needs a free key: fresnel key set eia
     params:

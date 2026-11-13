@@ -201,13 +201,20 @@ Goes **active** when latest demand or the next 24 hours of forecast reach `peak_
 
 ### `faa_airports` — Airport status (panel: Transport)
 
-Ground stops, ground delay programs, delays and closures at the airports you list, from the FAA's NAS status service. Default interval 5 minutes. **Off until you list airports.**
+Ground stops, ground delay programs, delays and closures from the FAA's NAS status service. Default interval 5 minutes. Two views of one feed:
 
-Goes **active** for a delay or ground program. Closure notices are listed but do not turn it active, because most are partial restrictions.
+- **Your airports:** every program, delay and closure at the airports you list. Goes **active** for a delay or ground program there. Closure notices are listed but do not turn it active, because most are partial restrictions.
+- **Nationwide:** counts across every airport in the feed (ground stops, delay programs, delays over an hour), plus the airports whose delay reason is **equipment** (the FAA's `EQ`, `STOP:EQ` and similar). This view is reported with no airports listed and turns the panel **active** when `equip_active` airports have equipment-caused delays or `stops_active` airports have ground stops. A system-wide communications or equipment failure shows up here even when your own airports are fine.
 
 | Param | Default | Meaning |
 |---|---|---|
-| `airports` | `[]` | FAA codes, such as `[MCI, STL]`. |
+| `airports` | `[]` | FAA codes, such as `[MCI, STL]`. Optional. |
+| `equip_active` | `2` | Airports with equipment-caused delays or stops that turn the panel active. |
+| `stops_active` | `5` | Airports with ground stops that turn it active. |
+| `long_delay_min` | `60` | Minutes at which a delay counts as long in the nationwide counts. |
+| `max_listed` | `6` | Most long delays listed. |
+
+The feed may not carry a blanket nationwide stop issued as an advisory; it shows the airports the FAA lists.
 
 The FAA's content network rejects many hosting providers' address ranges. See [When a feed blocks your server](#when-a-feed-blocks-your-server).
 
@@ -379,13 +386,13 @@ sources:
 
 ### `ioda_outages` — Internet outages (panel: Internet outages)
 
-Country-level internet outage events from IODA, Georgia Tech's Internet Outage Detection and Analysis, which combines BGP routing, active probing, a network telescope and Google traffic. You choose the countries to watch; the defaults are Ukraine, Russia, Iran, Israel, Taiwan and Venezuela. Default interval 30 minutes. No key.
+Country-level internet outage events from IODA, Georgia Tech's Internet Outage Detection and Analysis, which combines BGP routing, active probing, a network telescope and Google traffic. You choose the countries to watch; the defaults are the United States, Ukraine, Russia, Iran, Israel, Taiwan and Venezuela. Default interval 30 minutes. No key.
 
 A watched country with an event still running (its end within `ongoing_slack_min` of now) and lasting at least `min_minutes` goes **active**. Every watched country gets a row, including those with no outage, so the panel always shows what is being watched: "No outage", "Outage running 3 h" with the measurement that saw it, "Outage ended 5 h ago", or "Not checked" when IODA did not answer for it. Scores have no fixed scale, so they are not shown or rated. Duration matters: an event lasting many days is usually a chronic condition (a blocked service, for example), while a new event in a normally steady country is the signal. A country that could not be checked is named in the summary. If none can be checked, or IODA returns an error, the source fails (grey), never calm.
 
 | Param | Default | Meaning |
 |---|---|---|
-| `countries` | UA, RU, IR, IL, TW, VE | Two-letter country codes. |
+| `countries` | US, UA, RU, IR, IL, TW, VE | Two-letter country codes. |
 | `window_hours` | `24` | How far back events are looked for. |
 | `ongoing_slack_min` | `30` | An event ending within this many minutes of now counts as running. |
 | `min_minutes` | `30` | Shorter events are listed but do not turn the panel active. |
