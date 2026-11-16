@@ -37,7 +37,11 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-off
 .tile.info{border-color:var(--info-line)} .tile.info .st{color:var(--info)}
 .tile[aria-pressed=false]{opacity:.45;filter:grayscale(1)}
 .tile[aria-pressed=false] .st::after{content:" · HIDDEN"}
-.panels{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;align-items:start}
+.panels{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));column-gap:16px;row-gap:0;align-items:start}
+/* The board packs panels into the shortest column (see packPanels): rows are 4px units and each panel spans as many as it needs. */
+.panels.packed{grid-auto-rows:4px;grid-auto-flow:row dense}
+.panels.packed>.panel{margin-bottom:16px}
+.panels:not(.packed)>.panel{margin-bottom:16px}
 .panel{display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:10px;min-width:0}
 .panel.wide{grid-column:1/-1}
 .panel[hidden]{display:none}

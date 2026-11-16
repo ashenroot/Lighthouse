@@ -717,6 +717,23 @@
     box.replaceChildren(det);
   }
 
+  // Pack panels into the shortest column, so a short panel next to a tall one does not leave a gap. The grid has
+  // 4px rows; each panel spans the rows its height needs (plus the 16px gap), and "dense" placement fills the highest free slot.
+  // A panel's height changes when a group is folded or data refreshes, so each one is watched. Without ResizeObserver
+  // the plain grid layout stays.
+  const packer = typeof ResizeObserver === "function" ? new ResizeObserver((entries) => entries.forEach((en) => spanOf(en.target))) : null;
+  function spanOf(el) {
+    el.style.gridRowEnd = "span " + Math.max(1, Math.ceil((el.getBoundingClientRect().height + 16) / 4));
+  }
+  function packPanels() {
+    const box = $("panels");
+    if (!packer) return;
+    packer.disconnect();
+    const panels = [...box.querySelectorAll(":scope > .panel")];
+    box.classList.toggle("packed", panels.length > 0);
+    panels.forEach((el) => { spanOf(el); packer.observe(el); });
+  }
+
   // ---------- rendering ----------
   function renderHeader() {
     const s = state.snap;
@@ -762,6 +779,7 @@
     $("panels").replaceChildren(...(mine.length && !state.visible.length
       ? [h("div", { class: "empty wide-note" }, "Every panel in this tab is hidden. Click its tile above to show it again.")]
       : mine.map((id, i) => panelEl(model[id], snap, i))));
+    packPanels();
     renderSetup(snap.setup || []);
     $("relay-info").textContent = `Fresnel relay · schema ${snap.schema} · ${Object.keys(snap.sources).length} sources`;
   }
