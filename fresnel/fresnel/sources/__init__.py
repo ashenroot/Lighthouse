@@ -34,6 +34,7 @@ from .spc_storm_reports import SpcStormReports
 from .swpc_kp import SwpcKp
 from .swpc_scales import SwpcScales
 from .usgs_gauges import UsgsGauges
+from .service_status import ServiceStatus
 from .usgs_quakes import UsgsQuakes
 from .weather_outlooks import SpcOutlook, WpcRainfallOutlook
 
@@ -42,7 +43,7 @@ REGISTRY: dict[str, type[Source]] = {
         NwsAlerts, OpenFema, UsgsQuakes, FaaAirports, AviationWeather, CdcWastewater,
         FdaRecalls, CpscRecalls, CisaKev, SwpcKp, SwpcScales, NhcStorms,
         OdinOutages, Doe202c, NercAlerts, GridOperators, Chokepoints, AirQuality, NifcWildfires, FdicFailures, FederalRegister, SpcStormReports, RssHeadlines, IodaOutages, AviationForecast, SpcOutlook, EiaFuelPrices,
-    AirNowAqi, EiaGridDemand, CdcHospitalLoad, FdaDrugShortages, CbpBorderWaits,
+    AirNowAqi, EiaGridDemand, CdcHospitalLoad, FdaDrugShortages, CbpBorderWaits, ServiceStatus,
         # the Water panel reads in this order; river_stages comes before usgs_gauges, which leaves out gauges it already shows
         WpcRainfallOutlook, RiverStages, UsgsGauges, Drought,
     )

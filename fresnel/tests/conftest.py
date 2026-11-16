@@ -291,8 +291,25 @@ def _portwatch(request: httpx.Request) -> dict:
     return {"features": page, **({"exceededTransferLimit": True} if offset + size < len(rows) else {})}
 
 
+def status_feeds() -> dict:
+    """A healthy world for the cloud and service status source: every default provider answers and says it is fine."""
+    import httpx as _httpx
+    from fresnel.sources.service_status import DEFAULT_PROVIDERS
+    rss = "<rss><channel><title>x</title><lastBuildDate>Wed, 14 Oct 2026 11:58:00 Z</lastBuildDate></channel></rss>"
+    by_kind = {"statuspage": {"status": {"indicator": "none", "description": "All Systems Operational"}, "incidents": []},
+               "google_incidents": [], "slack": {"status": "ok", "active_incidents": []},
+               "stripe": {"largestatus": "up", "message": "All services are online."}, "rss_open": rss, "rss_recent": rss,
+               "m365_posts": [{"ServiceDisplayName": "Teams Free", "Status": "Operational"}],
+               "m365_admin": {"Status": "Available", "Message": "admin center"}}
+    out = {}
+    for p in DEFAULT_PROVIDERS:
+        url = _httpx.URL(p["url"])
+        out[url.path if url.host == "status.cloud.microsoft" else url.host] = by_kind[p["kind"]]  # the two Microsoft feeds share a host
+    return out
+
+
 def feeds() -> dict:
-    return {
+    return {**status_feeds(), 
         "api.weather.gov": {
             "features": [
                 {"properties": {"id": "a1", "event": "Flood Watch", "severity": "Minor",

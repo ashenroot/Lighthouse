@@ -283,6 +283,26 @@ Goes **active** when inpatient or ICU occupancy reaches its threshold, or when a
 | `min_patients` | `50` | Patients in hospital now, so a small count cannot trip the rise rule. |
 | `max_age_days` | `21` | Age at which the data counts as failed. |
 
+### `service_status` — Cloud and service status (panel: Cloud & services)
+
+The status of major cloud and SaaS providers, read from each provider's own public status feed: GitHub, Cloudflare, OpenAI, Claude, Atlassian, Discord, Dropbox, Twilio, Zoom, Akamai, Vercel, Slack, Stripe, Google Cloud, Google Workspace, AWS, Azure and Microsoft 365. Default interval 5 minutes. Providers that are not fine are listed first; the rest are folded into "Operating normally".
+
+These feeds are the providers' own word, so they lag a real outage and cannot show a problem a provider has not declared. Three rules keep the panel honest:
+
+- A provider that cannot be reached, or whose feed changed shape, is shown as **unreachable**. It is never counted as fine. A feed that lists only open incidents (Azure) but has stopped updating is unreachable, not "no incidents".
+- **Microsoft 365 for business** is shown as **limited coverage** while quiet. Microsoft's public feed for it only says whether the admin center is reachable. It does not publish Teams or Exchange health, so it cannot say those are fine.
+- If more than `max_unreachable_pct` of the providers are unreachable, the source fails as a whole.
+
+Goes **active** only when a provider declares a major or critical outage. Degraded service shows in the list and in the summary but does not turn the panel active.
+
+| Param | Default | Meaning |
+|---|---|---|
+| `exclude` | `[]` | Provider names to leave out (case-insensitive), for example `["Zoom"]`. |
+| `add` | `[]` | Your own providers, each `{name, kind, url}`. Kinds: `statuspage` (an Atlassian Statuspage `/api/v2/summary.json`), `google_incidents`, `slack`, `stripe`, `rss_open`, `rss_recent`. |
+| `recent_hours` | `6` | How recent an item in a history feed (AWS) must be to count. |
+| `max_feed_age_hours` | `6` | An open-incident feed not rebuilt for this long is unreachable. |
+| `max_unreachable_pct` | `50` | Share of providers that may be unreachable before the source fails. |
+
 ### `cbp_border_waits` — Border truck waits (panel: Supply chain)
 
 Wait times for standard commercial (truck) lanes at the US land border crossings on the Canadian and Mexican borders, from CBP's public Border Wait Times feed, refreshed by CBP about hourly. The feed lists about 85 crossings. Many show "N/A" (no commercial lanes), "Update Pending" or "Lanes Closed" at any moment, so the panel ranks only crossings that report a number and counts the rest. Closed commercial lanes are routine at small ports and are never rated. The feed is stamped in Eastern time.

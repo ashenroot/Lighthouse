@@ -12,14 +12,14 @@
   const TITLES = {
     brief: "Keeper's Log", local: "Local", water: "Water", airfire: "Air & fire", transport: "Transport", grid: "Power grid", supply: "Supply chain", finance: "Finance", federal: "Federal actions", headlines: "Headlines",
     space: "Space weather", tropical: "Tropical", cyber: "Cyber", health: "Health",
-    recalls: "Recalls", geo: "Internet outages",
+    recalls: "Recalls", geo: "Internet outages", cloud: "Cloud & services",
   };
-  const DEFAULT_ORDER = ["brief", "local", "water", "airfire", "transport", "grid", "supply", "finance", "federal", "space", "tropical", "cyber", "health", "recalls", "geo", "headlines"];
+  const DEFAULT_ORDER = ["brief", "local", "water", "airfire", "transport", "grid", "supply", "finance", "federal", "space", "tropical", "cyber", "cloud", "health", "recalls", "geo", "headlines"];
   // Tabs group the panels by theme. A panel that is in no group still appears, under "Other", so a new source is never hidden.
   // The Keeper's Log (brief) is pinned above the tabs. The "All" tab is the whole board in one page.
   const GROUPS = [
     { id: "now", label: "Now", panels: ["local", "water", "airfire", "transport", "tropical"] },
-    { id: "infra", label: "Infrastructure", panels: ["grid", "supply", "finance", "federal", "cyber", "space"] },
+    { id: "infra", label: "Infrastructure", panels: ["grid", "supply", "finance", "federal", "cyber", "cloud", "space"] },
     { id: "health", label: "Health", panels: ["health", "recalls"] },
     { id: "world", label: "World", panels: ["geo", "headlines"] },
   ];
@@ -158,6 +158,19 @@
       const rows = quietFold("river_stages", "River gauges", "gauges", d.gauges, (g) => !g.reporting || g.rank >= 1, one);
       rows.push(row("Gauges reporting", `${d.total - d.not_reporting} of ${d.total} within ${d.radius_km} km`,
         { url: e.source_url, tone: d.not_reporting ? "unknown" : null }));
+      return rows;
+    },
+    service_status(e, d) {
+      const tone = { major: "active", minor: null, unreachable: "unknown", limited: "unknown", ok: "ok" };
+      const word = { major: "Major outage", minor: "Degraded", unreachable: "Unreachable", limited: "Limited coverage" };
+      const loud = d.providers.filter((p) => p.level !== "ok");
+      const quiet = d.providers.filter((p) => p.level === "ok");
+      const rows = loud.map((p) => row(p.name, `${word[p.level]} · ${clip(p.detail, 60)}`,
+        { url: p.url, tone: tone[p.level], stack: true }));
+      if (!loud.length) rows.push(row("Providers", `${quiet.length} operating normally`, { url: e.source_url, tone: "ok" }));
+      else if (quiet.length) rows.push(quiet.length > 3
+        ? fold("service_status", "Operating normally", `${quiet.length} providers`, [row("", quiet.map((p) => p.name).join(", "), { url: e.source_url, stack: true })])
+        : row("Operating normally", quiet.map((p) => p.name).join(", "), { url: e.source_url, stack: true }));
       return rows;
     },
     cbp_border_waits(e, d) {

@@ -98,6 +98,7 @@ Each panel belongs to a tab. A tab's badge counts its active panels, and the **A
 | Finance | FDIC bank failures | a bank failure in the last 14 days |
 | Federal actions | Federal Register presidential documents | a new national emergency declaration |
 | Cyber | CISA Known Exploited Vulnerabilities | new entries in the last day |
+| Cloud & services | Official status feeds of major cloud and SaaS providers (GitHub, Cloudflare, AWS, Azure, Google Cloud, Microsoft 365 and others) | a provider declaring a major outage; unreachable and limited-coverage providers are shown, never counted as fine |
 | Space | NOAA planetary K-index and scales | a geomagnetic storm of G1 or more, a radio blackout of R2 or more, a radiation storm of S1 or more |
 
 ### Health
