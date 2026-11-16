@@ -99,13 +99,14 @@
     return det;
   }
 
-  // Airports that need attention stay visible; the quiet ones go into one collapsed group.
-  function airportFold(key, label, airports, needsAttention, one) {
-    const shown = airports.filter(needsAttention), rest = airports.filter((a) => !needsAttention(a));
-    if (rest.length <= 3) return airports.map(one);
-    const word = shown.length ? `${rest.length} more airports` : `${rest.length} airports`;
+  // Items that need attention stay visible; the quiet ones go into one collapsed group.
+  function quietFold(key, label, noun, items, needsAttention, one) {
+    const shown = items.filter(needsAttention), rest = items.filter((a) => !needsAttention(a));
+    if (rest.length <= 3) return items.map(one);
+    const word = shown.length ? `${rest.length} more ${noun}` : `${rest.length} ${noun}`;
     return shown.map(one).concat([fold(key, label, `${word} · none flagged`, rest.map(one))]);
   }
+  const airportFold = (key, label, airports, needsAttention, one) => quietFold(key, label, "airports", airports, needsAttention, one);
 
   const outlookRows = (e, d, label) => d.days.every((day) => !day.unchecked && !day.category)
     ? [row(label, `No risk area · next ${d.days.length} days`, { url: e.source_url, tone: "ok" })]
@@ -134,11 +135,12 @@
     },
     usgs_gauges(e, d) {
       if (!d.gauges.length) return [row("Stream gauges", e.summary, { url: e.source_url })];
-      return d.gauges.map((g) => {
+      const one = (g) => {
         const c = g.change_24h_ft;
         return row(clip(g.name, 42), `${g.height_ft.toFixed(2)} ft (${c >= 0 ? "+" : ""}${c.toFixed(2)}/24h)`,
           { url: g.url, tone: g.above_flood_stage ? "active" : null });
-      });
+      };
+      return quietFold("usgs_gauges", "Stream gauges", "gauges", d.gauges, (g) => g.above_flood_stage, one);
     },
     river_stages(e, d) {
       if (!d.gauges.length) return [row("River gauges", e.summary, { url: e.source_url })];
@@ -146,13 +148,14 @@
         moderate: "moderate flooding", major: "major flooding", not_defined: "no flood stage set" };
       const RANK = { action: 1, minor: 2, moderate: 3, major: 4 };
       const floor = RANK[d.active_min] || 2;
-      const rows = d.gauges.map((g) => {
+      const one = (g) => {
         if (!g.reporting) return row(clip(g.name, 40), "Not reporting", { url: g.url, tone: "unknown" });
         const bits = [WORDS[g.observed.category] || g.observed.category];
         if (g.observed.stage != null && g.observed.stage > -900) bits.push(`${g.observed.stage} ${g.observed.unit || "ft"}`);
         if (g.forecast.category) bits.push(`forecast ${g.forecast.category}`);
         return row(clip(g.name, 40), bits.join(" · "), { url: g.url, tone: g.rank >= floor ? "active" : g.rank >= 1 ? null : "ok" });
-      });
+      };
+      const rows = quietFold("river_stages", "River gauges", "gauges", d.gauges, (g) => !g.reporting || g.rank >= 1, one);
       rows.push(row("Gauges reporting", `${d.total - d.not_reporting} of ${d.total} within ${d.radius_km} km`,
         { url: e.source_url, tone: d.not_reporting ? "unknown" : null }));
       return rows;
