@@ -160,6 +160,14 @@
         { url: e.source_url, tone: d.not_reporting ? "unknown" : null }));
       return rows;
     },
+    cbp_border_waits(e, d) {
+      const rows = [row("Border truck waits", `${d.delayed} of ${d.reporting} crossings delayed${d.long_waits ? ` · ${d.long_waits} at ${d.delay_min}+ min` : ""}`, { url: e.source_url, tone: d.long_waits ? "active" : null })]
+        .concat(d.listed.map((c) => row(clip(`${c.label}`, 42), `${c.delay_min} min${c.lanes_open != null ? ` · ${c.lanes_open} lane${c.lanes_open === 1 ? "" : "s"}` : ""}`,
+        { url: e.source_url, tone: c.delay_min >= d.delay_min ? "active" : c.delay_min === 0 ? "ok" : null })));
+      d.closed.forEach((name) => rows.splice(1, 0, row(clip(name, 42), "Port closed", { url: e.source_url, tone: "active" })));
+      rows.push(row("Crossings reporting", `${d.reporting} with a wait${d.pending ? ` · ${d.pending} update pending` : ""}`, { url: e.source_url }));
+      return rows;
+    },
     chokepoints(e, d) {
       const pct = (v) => { const n = Math.round(v); return `${n > 0 ? "+" : ""}${n === 0 ? 0 : n}%`; };
       const rows = d.chokepoints.map((c) => {

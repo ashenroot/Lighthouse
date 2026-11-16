@@ -10,6 +10,7 @@ from .chokepoints import Chokepoints
 from .cisa_kev import CisaKev
 from .doe_202c import Doe202c
 from .airnow_aqi import AirNowAqi
+from .cbp_border_waits import CbpBorderWaits
 from .cdc_hospital_load import CdcHospitalLoad
 from .fda_drug_shortages import FdaDrugShortages
 from .eia_fuel_prices import EiaFuelPrices
@@ -41,7 +42,7 @@ REGISTRY: dict[str, type[Source]] = {
         NwsAlerts, OpenFema, UsgsQuakes, FaaAirports, AviationWeather, CdcWastewater,
         FdaRecalls, CpscRecalls, CisaKev, SwpcKp, SwpcScales, NhcStorms,
         OdinOutages, Doe202c, NercAlerts, GridOperators, Chokepoints, AirQuality, NifcWildfires, FdicFailures, FederalRegister, SpcStormReports, RssHeadlines, IodaOutages, AviationForecast, SpcOutlook, EiaFuelPrices,
-    AirNowAqi, EiaGridDemand, CdcHospitalLoad, FdaDrugShortages,
+    AirNowAqi, EiaGridDemand, CdcHospitalLoad, FdaDrugShortages, CbpBorderWaits,
         # the Water panel reads in this order; river_stages comes before usgs_gauges, which leaves out gauges it already shows
         WpcRainfallOutlook, RiverStages, UsgsGauges, Drought,
     )

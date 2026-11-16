@@ -94,7 +94,7 @@ Each panel belongs to a tab. A tab's badge counts its active panels, and the **A
 | Panel | Feeds | Turns active when |
 |---|---|---|
 | Power grid | ODIN customer outages, DOE 202(c) emergency orders, NERC alerts, links to regional operators, EIA grid demand (free key) | reported outages reach a threshold in your county or state, a new DOE emergency order (not a plant-retention renewal), demand or its day-ahead forecast within 10% of your grid's one-year peak |
-| Supply chain | IMF PortWatch shipping chokepoints, EIA retail gasoline and diesel prices (free key) | a major chokepoint's weekly traffic far below its norm, regional fuel prices up 10% or more over four weeks |
+| Supply chain | IMF PortWatch shipping chokepoints, CBP truck waits at the land borders, EIA retail gasoline and diesel prices (free key) | a major chokepoint's weekly traffic far below its norm, a border truck wait of an hour or more or a closed port, regional fuel prices up 10% or more over four weeks |
 | Finance | FDIC bank failures | a bank failure in the last 14 days |
 | Federal actions | Federal Register presidential documents | a new national emergency declaration |
 | Cyber | CISA Known Exploited Vulnerabilities | new entries in the last day |

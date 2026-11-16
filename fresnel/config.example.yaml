@@ -135,6 +135,11 @@ sources:
       icu_pct: 85                       # the same for ICU beds
       rise_pct: 50                      # COVID, flu or RSV hospital patients up this much over `weeks`...
       min_patients: 50                  # ...with at least this many in hospital now
+  cbp_border_waits:
+    params:
+      delay_min: 60                     # commercial truck wait, in minutes, at any crossing that turns the panel active
+      # borders: [Canadian Border]      # watch one border only
+      # ports: [Detroit, Laredo]        # or only these ports
   fda_drug_shortages:
     params:
       list: all                         # all lists every drug on the shortage list; none leaves it out

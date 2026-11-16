@@ -221,6 +221,23 @@ def _cdc_hospital(request):
     return rows[:int(request.url.params.get("$limit", 6))]
 
 
+def _cbp_xml(updated="2026-10-14 07:40:00", pembina="56", detroit="25", port_status="Open", extra=""):
+    def port(name, crossing, border, status, delay, lanes, pstatus="Open"):
+        return (f"<port><border>{border}</border><port_name>{name}</port_name><crossing_name>{crossing}</crossing_name>"
+                f"<port_status>{pstatus}</port_status><commercial_vehicle_lanes><standard_lanes><operational_status>{status}</operational_status>"
+                f"<delay_minutes>{delay}</delay_minutes><lanes_open>{lanes}</lanes_open></standard_lanes></commercial_vehicle_lanes></port>")
+    body = (port("Pembina", "", "Canadian Border", "delay", pembina, 2) + port("Detroit", "Ambassador Bridge", "Canadian Border", "delay", detroit, 6)
+            + port("Laredo", "World Trade Bridge", "Mexican Border", "no delay", "0", 8)
+            + port("Andrade", "", "Mexican Border", "Update Pending", "", "")
+            + port("Sweetgrass", "", "Canadian Border", "no delay", "5", 2, port_status) + extra)
+    date_, time_ = updated.split()
+    return f"<border_wait_time><last_updated_date>{date_}</last_updated_date><last_updated_time>{time_}</last_updated_time><number_of_ports>5</number_of_ports>{body}</border_wait_time>"
+
+
+def _cbp(request):
+    return _cbp_xml()
+
+
 def _fda_shortages(request):
     """Mock openFDA drug shortages: one record per presentation, dates as MM/DD/YYYY, paged by skip and limit."""
     def rec(name, avail, posted, category="Anesthesia"):
@@ -333,6 +350,7 @@ def feeds() -> dict:
         ]}},
         "/resource/ua7e-t2fy.json": _cdc_hospital,
         "/drug/shortages.json": _fda_shortages,
+        "bwt.cbp.gov": _cbp,
         "data.cdc.gov": [
             {"state_territory": "Georgia", "week_end": "2026-10-03T00:00:00.000", "pathogen_target": "SARS-CoV-2", "site_wval_category": "High"},
             {"state_territory": "Georgia", "week_end": "2026-10-03T00:00:00.000", "pathogen_target": "SARS-CoV-2", "site_wval_category": "Very High"},

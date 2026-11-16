@@ -14,6 +14,7 @@ Lighthouse is meant to run on a small server you control. This page says what le
 | `www.fema.gov` | Disaster declarations | Your county code |
 | `usdmdataservices.unl.edu` | Drought | Your county code |
 | `data.cdc.gov` | Wastewater, hospital load | Your state |
+| `bwt.cbp.gov` | Border truck waits | Nothing about you (a national feed, no location sent) |
 | `api.fda.gov` | FDA recalls, drug shortages | Your state, in the recall filter; the shortage request sends nothing about you |
 | `www.saferproducts.gov` | CPSC recalls | Nothing about you |
 | `nasstatus.faa.gov` | Airport status | Nothing about you (the airport list is applied locally) |

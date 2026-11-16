@@ -283,6 +283,20 @@ Goes **active** when inpatient or ICU occupancy reaches its threshold, or when a
 | `min_patients` | `50` | Patients in hospital now, so a small count cannot trip the rise rule. |
 | `max_age_days` | `21` | Age at which the data counts as failed. |
 
+### `cbp_border_waits` — Border truck waits (panel: Supply chain)
+
+Wait times for standard commercial (truck) lanes at the US land border crossings on the Canadian and Mexican borders, from CBP's public Border Wait Times feed, refreshed by CBP about hourly. The feed lists about 85 crossings. Many show "N/A" (no commercial lanes), "Update Pending" or "Lanes Closed" at any moment, so the panel ranks only crossings that report a number and counts the rest. Closed commercial lanes are routine at small ports and are never rated. The feed is stamped in Eastern time.
+
+Goes **active** when any watched crossing has a commercial wait of at least `delay_min` minutes, or when a port is closed. Fails visibly when the feed is older than `max_age_minutes`, is not valid XML, or lists no crossings.
+
+| Param | Default | Meaning |
+|---|---|---|
+| `delay_min` | `60` | Commercial wait, in minutes, that turns the panel active. |
+| `borders` | both | `Canadian Border`, `Mexican Border`, or both. |
+| `ports` | `[]` | Only these port names (for example `Detroit`). Empty means every crossing on the chosen borders. |
+| `max_listed` | `5` | Crossings listed, longest wait first. |
+| `max_age_minutes` | `240` | Age at which the feed counts as failed. |
+
 ### `fda_drug_shortages` — Drug shortages (panel: Health)
 
 Current US drug shortages from the FDA's shortage database (openFDA). The database lists one record per product presentation, so records are grouped by generic drug name. The panel shows how many drugs are on the list, how many have a product unavailable or limited, which drugs were newly listed recently, and the status of every drug on your `watch` list (including "not on the shortage list", so a quiet watch is visible). Default interval 6 hours. openFDA marks this data as unvalidated; it is situational awareness, not medical guidance.
