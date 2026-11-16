@@ -76,7 +76,7 @@
   }
 
   // ---------- state ----------
-  const state = { snap: null, etag: null, lastOk: null, error: null, nextAt: null, loading: false, visible: [], refocus: null, setupOpen: false };
+  const state = { snap: null, etag: null, lastOk: null, error: null, nextAt: null, loading: false, visible: [], refocus: null, setupOpen: false, folds: {} };
   let dragId = null;
 
   // ---------- row renderers, one per source ----------
@@ -86,6 +86,25 @@
     const cls = "row" + (o.tone ? " t-" + o.tone : "") + (o.stale ? " stale" : "") + (o.stack ? " stack" : "");
     const kids = [h("span", { class: "k" }, label), h("span", { class: "v" }, value)];
     return url ? h("a", { class: cls, href: url, target: "_blank", rel: "noopener" }, kids) : h("div", { class: cls }, kids);
+  }
+
+  // A collapsible group of rows. It remembers whether it is open across refreshes, and starts closed.
+  function fold(key, label, value, rows, o) {
+    o = o || {};
+    const det = h("details", { class: "fold" + (o.tone ? " t-" + o.tone : "") },
+      h("summary", { class: "row" }, h("span", { class: "k" }, label), h("span", { class: "v" }, value)),
+      h("div", { class: "fold-body" }, rows));
+    if (state.folds[key]) det.setAttribute("open", "");
+    det.addEventListener("toggle", () => { state.folds[key] = det.open; });
+    return det;
+  }
+
+  // Airports that need attention stay visible; the quiet ones go into one collapsed group.
+  function airportFold(key, label, airports, needsAttention, one) {
+    const shown = airports.filter(needsAttention), rest = airports.filter((a) => !needsAttention(a));
+    if (rest.length <= 3) return airports.map(one);
+    const word = shown.length ? `${rest.length} more airports` : `${rest.length} airports`;
+    return shown.map(one).concat([fold(key, label, `${word} · none flagged`, rest.map(one))]);
   }
 
   const outlookRows = (e, d, label) => d.days.every((day) => !day.unchecked && !day.category)
@@ -228,13 +247,14 @@
       return own.concat(rows);
     },
     aviation_weather(e, d) {
-      return d.airports.map((a) => {
+      const one = (a) => {
         if (!a.category) return row(a.airport, "No recent report", { url: e.source_url, tone: "unknown" });
         const parts = [a.category];
         if (a.visibility_sm != null) parts.push(`vis ${a.visibility_sm} mi`);
         if (a.ceiling_ft != null) parts.push(`ceiling ${a.ceiling_ft.toLocaleString()} ft`);
         return row(a.airport, parts.join(" · "), { url: e.source_url, tone: a.active ? "active" : a.category === "VFR" ? "ok" : null });
-      });
+      };
+      return airportFold("aviation_weather", "Airport weather", d.airports, (a) => a.active || !a.category, one);
     },
     spc_outlook(e, d) { return outlookRows(e, d, "Severe storms"); },
     wpc_rainfall_outlook(e, d) { return outlookRows(e, d, "Flash flooding"); },
@@ -253,12 +273,13 @@
     },
     aviation_forecast(e, d) {
       const hhz = (ts) => new Date(ts * 1000).toISOString().slice(11, 13) + "Z";
-      return d.airports.map((a) => {
+      const one = (a) => {
         if (!a.forecast) return row(a.airport, "No forecast", { url: e.source_url, tone: "unknown" });
         const maybe = a.possible ? ` · ${a.possible} possible (TEMPO)` : "";
         if (a.active) return row(a.airport, `${a.bad_category} forecast from ${hhz(a.bad_from)}${maybe}`, { url: e.source_url, tone: "active" });
         return row(a.airport, `${a.worst} through ${a.hours} h${maybe}`, { url: e.source_url, tone: a.worst === "VFR" && !a.possible ? "ok" : null });
-      });
+      };
+      return airportFold("aviation_forecast", "Airport forecast", d.airports, (a) => a.active || !a.forecast || a.possible, one);
     },
     cdc_hospital_load(e, d) {
       const rows = [];
@@ -277,10 +298,11 @@
         row(`Watching ${w.term}`, clip(w.matches.map((m) => `${m.name}: ${m.availability.toLowerCase()}`).join("; "), 90), { url: e.source_url, tone: tone(w.matches[0].availability) })));
       if (quiet.length) rows.push(row(`Watching ${quiet.length} drug${quiet.length === 1 ? "" : "s"}`, `Not on the shortage list: ${quiet.map((w) => w.term).join(", ")}`, { url: e.source_url, tone: "ok", stack: true }));
       const names = (list) => list.map((m) => m.name.replace(/, /g, " + ")).join(", ");
-      [["Unavailable", "Product unavailable"], ["Limited Availability", "Limited"], ["Available", "Available"]].forEach(([key, label]) => {
+      const groups = [["Unavailable", "Product unavailable"], ["Limited Availability", "Limited"], ["Available", "Available"]].map(([key, label]) => {
         const hit = d.drugs.filter((m) => m.availability === key);
-        if (hit.length) rows.push(row(`${label} (${hit.length})`, names(hit), { url: e.source_url, stack: true }));
-      });
+        return hit.length ? row(`${label} (${hit.length})`, names(hit), { url: e.source_url, stack: true }) : null;
+      }).filter(Boolean);
+      if (groups.length) rows.push(fold("fda_drug_list", "Full shortage list", `${d.drugs.length} drugs`, groups));
       if (!d.new_total) rows.push(row(`New in ${d.new_days} days`, "None", { url: e.source_url }));
       d.new.forEach((m) => rows.push(row(`New ${m.posted}`, clip(`${m.name} · ${m.availability.toLowerCase()}`, 80), { url: e.source_url, tone: d.new_active ? "active" : null })));
       return rows;
