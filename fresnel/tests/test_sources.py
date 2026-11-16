@@ -729,3 +729,20 @@ async def test_faa_national_thresholds_and_a_quiet_day(config, clock):
     await r.refresh("faa_airports")
     env = r.envelope("faa_airports")
     assert env["status"] == "nominal" and env["summary"] == "Nationwide: 0 ground stops, 0 long delays"
+
+
+def test_failure_wait_retries_slow_sources_sooner():
+    from fresnel.relay import failure_wait
+    assert failure_wait(21600, 0) == 21600
+    assert [failure_wait(21600, n) for n in (1, 2, 3, 4, 9)] == [300, 600, 1200, 1800, 1800]
+    assert failure_wait(60, 1) == 120 and failure_wait(60, 20) == 360  # fast sources keep the old backoff
+    assert failure_wait(900, 1) == 1800
+
+
+async def test_chokepoints_names_an_upstream_rate_limit(config, clock):
+    config.sources["chokepoints"] = SourceCfg(params={"names": ["Panama Canal"]})
+    d = {"services9.arcgis.com": {"error": {"code": 429, "message": "Too many requests."}}}
+    r = Relay(config, client=make_client(data=d), now=clock)
+    await r.refresh("chokepoints")
+    env = r.envelope("chokepoints")
+    assert env["fetch"]["ok"] is False and "rate limiting" in env["fetch"]["error"]

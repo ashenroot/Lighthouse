@@ -37,6 +37,19 @@ logging.getLogger("httpcore").setLevel(logging.WARNING)
 
 RECHECK_REJECTED = 300  # seconds before trying again after a provider refuses a key, so a corrected key is picked up soon
 RECHECK_MISSING = 60
+RETRY_FIRST = 300  # seconds before the first retry of a slow source that failed
+RETRY_CAP = 1800   # a slow source that keeps failing is retried at least this often
+
+
+def failure_wait(interval: float, failures: int) -> float:
+    """Seconds to wait before the next fetch. A working source waits its interval. A failing fast source backs off up to
+    six times its interval. A slow source (interval over RETRY_CAP) retries sooner than its interval, 5 minutes first and
+    then doubling to 30, so one bad fetch does not leave a 6-hour source failed for a day."""
+    if failures == 0:
+        return interval
+    if interval > RETRY_CAP:
+        return min(RETRY_FIRST * 2 ** (failures - 1), RETRY_CAP)
+    return interval * min(1 + failures, 6)
 
 
 def describe_error(exc: Exception) -> str:
@@ -172,9 +185,7 @@ class Relay:
                 await asyncio.sleep(RECHECK_MISSING)  # a key set with `fresnel key set` is picked up within a minute
                 continue
             await self.refresh(sid)
-            failures = self.states[sid].consecutive_failures
-            factor = 1 if failures == 0 else min(1 + failures, 6)  # back off while failing
-            wait = self._recheck.get(sid) or src.interval * factor
+            wait = self._recheck.get(sid) or failure_wait(src.interval, self.states[sid].consecutive_failures)
             await asyncio.sleep(wait * random.uniform(0.9, 1.1))
 
     def start(self) -> None:

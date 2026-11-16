@@ -50,7 +50,9 @@ class Chokepoints(Source):
             resp.raise_for_status()
             body = resp.json()
             if "error" in body:
-                raise SourceError("upstream query error")
+                code = body["error"].get("code") if isinstance(body["error"], dict) else None
+                raise SourceError("upstream is rate limiting requests, will retry" if code == 429
+                                  else f"upstream refused the query (code {code})" if code else "upstream query error")
             features = body["features"]
             for f in features:
                 a = f["attributes"]
