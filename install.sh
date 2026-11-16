@@ -99,6 +99,7 @@ else
   fresnel init --out "$CONFIG" --data-dir "$DATA_DIR" --owner "$SERVICE_USER" $INIT_ARGS
 fi
 fresnel --config "$CONFIG" check >/dev/null || die "the config did not validate; fix it and run ./install.sh again"
+PORT=$(fresnel --config "$CONFIG" check --print port)
 
 if [ "$SYSTEMD" = yes ]; then
   say "Service"
@@ -140,7 +141,6 @@ UNIT
   echo "the relay is running on 127.0.0.1:$PORT"
 fi
 
-PORT=$(fresnel --config "$CONFIG" check --print port)
 say "Done"
 cat <<NEXT
 Check it:            fresnel check
