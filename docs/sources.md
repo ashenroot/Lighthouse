@@ -18,7 +18,7 @@ A reading is **old** when it is more than `stale_after` seconds behind (three in
 How fetching behaves:
 
 - Each source runs on its own timer, started a little apart from the others so they do not all hit the network at once. Each wait varies by about 10% for the same reason.
-- When a source fails, the relay keeps the last good data and tries again later, waiting longer after each failure (up to six times the normal interval). It resets as soon as one succeeds.
+- When a source fails, the relay keeps the last good data and tries again later, waiting longer after each failure. A source that normally runs every few minutes waits up to six times its interval. A slow source (an interval over 30 minutes) retries after 5 minutes, then 10, 20 and 30, and does not sit out its whole interval. The wait resets as soon as one fetch succeeds.
 - Each source's last good reading is saved to disk, so a restart shows data immediately instead of an empty board. A restart does not re-send alerts for conditions that were already active.
 - Error text shown on the board and in `/v1/health` is cleaned: it names the kind of failure (`HTTP 403`, `ConnectError`) and never contains a URL.
 
@@ -451,6 +451,8 @@ The data lags by a few days, and the summary says what date it runs through. If 
 | `min_baseline` | `5` | Chokepoints averaging fewer daily transits are not rated. |
 
 A chokepoint that has been down for months stays active until it recovers or you remove it from `names`.
+
+PortWatch is served from an ArcGIS service shared by all of its users, with a quota of 6,000 request units a minute. The source asks the service for window totals (the latest day, the 7-day, 90-day and 1-year sums per chokepoint) instead of downloading a year of daily rows, so a fetch is four small requests. If the service answers `429` the source waits 65 seconds and retries, and the service sometimes rejects a valid query with a brief `400` or `499` that clears on the next try, so those retry after a few seconds. After four tries the source fails with "upstream is rate limiting requests, will retry" or "upstream refused the query" and tries again on the shorter retry schedule above.
 
 ### `fdic_failures` — Bank failures (panel: Finance)
 

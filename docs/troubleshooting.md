@@ -27,6 +27,10 @@ If `curl` to port 8787 gives nothing, the service is not running. Everything els
 
 After any fix: `fresnel check`, then restart.
 
+Run `sudo fresnel --config /opt/lighthouse/app/fresnel/config.yaml check` before every restart on a server installed by `install.sh`. A config error that slips through makes the service fail to start, and a reverse proxy in front of it then answers `502` with nothing else to go on.
+
+Two mistakes that cause these errors on a fresh install: pasting a YAML block with the wrong indentation (use `nano -i`, which stops the editor adding its own indent, and indent with exactly two spaces per level), and putting a source's entry at the top level of the file instead of under `sources:`. A source entry such as `spc_storm_reports:` is only valid inside `sources:`, and a top-level one gives `Extra inputs are not permitted`.
+
 ## Commands that fail
 
 **`sudo: fresnel: command not found`**: the link in `/usr/local/bin` is missing, or sudo's path does not include it. Use `sudo /opt/lighthouse/app/fresnel/.venv/bin/fresnel ...`, or recreate it: `sudo ln -sf /opt/lighthouse/app/fresnel/.venv/bin/fresnel /usr/local/bin/fresnel`.
@@ -69,6 +73,8 @@ Open `/v1/health` and look at the source's `error`.
 | `ConnectError`, `ConnectTimeout` | The server cannot reach the host. Check DNS and outbound firewall: `curl -sS -m 10 https://api.weather.gov`. If the source uses a `proxy:`, is the proxy up? |
 | `ReadTimeout` | Slow publisher. Raise `http.timeout`. |
 | `ProxyError`, `socks` errors | The configured proxy is down or refused. Check the tunnel and test it with curl ([Sources](sources.md#when-a-feed-blocks-your-server)). |
+| `upstream is rate limiting requests, will retry` | The publisher's service is over its quota. The source retries by itself, within 5 minutes for slow sources. Persistent failures on one server usually mean its address is being throttled; send that source through a proxy ([Sources](sources.md#when-a-feed-blocks-your-server)). |
+| `upstream refused the query (code N)` | The publisher's service rejected the request. Some gateways do this briefly for valid queries, so the source has already retried. If it persists for hours, the publisher may have changed the service; test the request with curl and compare with the source's section in [Sources](sources.md). |
 | `Waiting for first successful fetch` | Fresnel just started; sources are staggered. Wait a few minutes. |
 | `Stale: ...` | A fetch has not succeeded within `stale_after`. Look for the error above. |
 
