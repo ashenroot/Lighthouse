@@ -102,7 +102,7 @@ class CbpBorderWaits(Source):
             top = crossings[0]
             summary = f"No truck wait over {floor} min" + (f"; longest {top['delay_min']} min at {top['label']}" if top["delay_min"] else "")
         return Result(
-            data={"updated": updated.isoformat(), "age_min": age, "delay_min": floor, "listed": listed, "reporting": len(crossings),
+            data={"updated": updated.isoformat(), "age_min": age, "delay_min": floor, "listed": listed, "crossings": crossings, "reporting": len(crossings),
                   "pending": pending, "lanes_closed": lanes_closed, "delayed": len(delayed), "long_waits": len(long_waits), "closed": closed},
             summary=summary, status="active" if active else "nominal", source_url=PAGE,
         )

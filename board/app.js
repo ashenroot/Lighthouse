@@ -174,11 +174,20 @@
       return rows;
     },
     cbp_border_waits(e, d) {
-      const rows = [row("Border truck waits", `${d.delayed} of ${d.reporting} crossings delayed${d.long_waits ? ` · ${d.long_waits} at ${d.delay_min}+ min` : ""}`, { url: e.source_url, tone: d.long_waits ? "active" : null })]
-        .concat(d.listed.map((c) => row(clip(`${c.label}`, 42), `${c.delay_min} min${c.lanes_open != null ? ` · ${c.lanes_open} lane${c.lanes_open === 1 ? "" : "s"}` : ""}`,
-        { url: e.source_url, tone: c.delay_min >= d.delay_min ? "active" : c.delay_min === 0 ? "ok" : null })));
-      d.closed.forEach((name) => rows.splice(1, 0, row(clip(name, 42), "Port closed", { url: e.source_url, tone: "active" })));
-      rows.push(row("Crossings reporting", `${d.reporting} with a wait${d.pending ? ` · ${d.pending} update pending` : ""}`, { url: e.source_url }));
+      const opts = (c) => ({ url: e.source_url, tone: c.delay_min >= d.delay_min ? "active" : c.delay_min === 0 ? "ok" : null });
+      const one = (c) => row(clip(c.label, 42), `${c.delay_min} min${c.lanes_open != null ? ` · ${c.lanes_open} lane${c.lanes_open === 1 ? "" : "s"}` : ""}`, opts(c));
+      const all = d.crossings || d.listed;
+      const long = all.filter((c) => c.delay_min >= d.delay_min), delayed = all.filter((c) => c.delay_min > 0 && c.delay_min < d.delay_min), clear = all.filter((c) => c.delay_min === 0);
+      const rows = [row("Border truck waits", `${d.delayed} of ${d.reporting} crossings delayed${d.long_waits ? ` · ${d.long_waits} at ${d.delay_min}+ min` : ""}`, { url: e.source_url, tone: d.long_waits ? "active" : null })];
+      // Long waits stay in view; with none, the few longest show. Everything else is one tap away.
+      const head = long.length ? long : delayed.slice(0, 3);
+      const rest = long.length ? delayed : delayed.slice(head.length);
+      head.forEach((c) => rows.push(one(c)));
+      if (rest.length) rows.push(fold("cbp_delayed", "Other delays", `${rest.length} crossing${rest.length === 1 ? "" : "s"}`, rest.map(one)));
+      if (clear.length) rows.push(fold("cbp_clear", "No delay", `${clear.length} crossing${clear.length === 1 ? "" : "s"}`, clear.map(one)));
+      if (d.closed.length) rows.push(fold("cbp_closed", "Ports closed", `${d.closed.length}`, d.closed.map((name) => row(clip(name, 42), "Closed", { url: e.source_url, tone: "active" })), { tone: "active" }));
+      const quiet = [d.pending ? `${d.pending} update pending` : "", d.lanes_closed ? `${d.lanes_closed} lanes closed` : ""].filter(Boolean).join(" · ");
+      if (quiet) rows.push(row("Not reporting a wait", quiet, { url: e.source_url }));
       return rows;
     },
     chokepoints(e, d) {
