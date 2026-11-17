@@ -741,9 +741,27 @@ def test_failure_wait_retries_slow_sources_sooner():
 
 async def test_chokepoints_names_an_upstream_rate_limit(config, clock, monkeypatch):
     monkeypatch.setattr("fresnel.sources.chokepoints.RATE_WAIT", 0)
+    monkeypatch.setattr("fresnel.sources.chokepoints.FLAKE_WAIT", 0)
     config.sources["chokepoints"] = SourceCfg(params={"names": ["Panama Canal"]})
     d = {"services9.arcgis.com": {"error": {"code": 429, "message": "Too many requests."}}}
     r = Relay(config, client=make_client(data=d), now=clock)
     await r.refresh("chokepoints")
     env = r.envelope("chokepoints")
     assert env["fetch"]["ok"] is False and "rate limiting" in env["fetch"]["error"]
+
+
+async def test_chokepoints_retries_a_transient_gateway_error(config, clock, monkeypatch):
+    from fresnel.config import SourceCfg
+    from tests.conftest import _portwatch
+    monkeypatch.setattr("fresnel.sources.chokepoints.FLAKE_WAIT", 0)
+    config.sources["chokepoints"] = SourceCfg(params={"names": ["Panama Canal", "Suez Canal"]})
+    calls = {"n": 0}
+
+    def flaky(request):
+        calls["n"] += 1
+        return {"error": {"code": 400, "message": "Invalid URL"}} if calls["n"] == 2 else _portwatch(request)
+    d = feeds()
+    d["services9.arcgis.com"] = flaky
+    r = Relay(config, client=make_client(data=d), now=clock)
+    await r.refresh("chokepoints")
+    assert r.envelope("chokepoints")["status"] == "nominal" and calls["n"] == 5

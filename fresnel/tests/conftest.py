@@ -272,23 +272,25 @@ FIRES = [
 
 
 def _portwatch(request: httpx.Request) -> dict:
+    import json
     q = request.url.params
     where = q["where"]
-    start = date.fromisoformat(where.split("date >= '")[1].split("'")[0])
+    lo = date.fromisoformat(where.split("date >= '")[1].split("'")[0])
+    hi = date.fromisoformat(where.split("date <= '")[1].split("'")[0]) if "date <= '" in where else date(2026, 12, 31)
     names = re.findall(r"'([^']+)'", where.split(" AND ")[0])
     last = date(2026, 10, 11)
-    rows, day = [], start
-    while day <= last:
-        for name in names:
-            if name == "Strait of Hormuz":
-                n = 80 if day < date(2026, 3, 1) else 4
-            else:
-                n = {"Panama Canal": 25, "Suez Canal": 40}.get(name, 20)
-            rows.append({"attributes": {"date": day.isoformat(), "portname": name, "n_total": n}})
-        day += timedelta(days=1)
-    offset, size = int(q.get("resultOffset", 0)), int(q["resultRecordCount"])
-    page = rows[offset: offset + size]
-    return {"features": page, **({"exceededTransferLimit": True} if offset + size < len(rows) else {})}
+    hi = min(hi, last)
+
+    def n_for(name, day):
+        if name == "Strait of Hormuz":
+            return 80 if day < date(2026, 3, 1) else 4
+        return {"Panama Canal": 25, "Suez Canal": 40}.get(name, 20)
+
+    days = [lo + timedelta(days=i) for i in range((hi - lo).days + 1)]
+    stat = json.loads(q["outStatistics"])[0]["statisticType"]
+    if stat == "max":
+        return {"features": [{"attributes": {"portname": nm, "d": hi.isoformat()}} for nm in names] if days else []}
+    return {"features": [{"attributes": {"portname": nm, "s": sum(n_for(nm, d) for d in days), "n": len(days)}} for nm in names]}
 
 
 def status_feeds() -> dict:

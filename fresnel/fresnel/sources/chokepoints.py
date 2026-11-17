@@ -17,7 +17,8 @@ from .base import Result, Source, SourceError
 API = "https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/services/Daily_Chokepoints_Data/FeatureServer/0/query"
 PAGE = "https://portwatch.imf.org/"
 RATE_WAIT = 65  # seconds; the service meters per minute and says "retry after 60"
-RATE_TRIES = 3
+RATE_TRIES = 4
+FLAKE_WAIT = 4  # seconds; the service's gateway sometimes answers a valid query with a 400 or 499 and then accepts it
 DEFAULT_NAMES = ["Panama Canal", "Suez Canal", "Bab el-Mandeb Strait", "Strait of Hormuz", "Malacca Strait", "Taiwan Strait"]
 
 
@@ -34,70 +35,68 @@ class Chokepoints(Source):
     default_params = {"names": DEFAULT_NAMES, "drop_pct": 30, "recent_days": 7, "baseline_days": 90,
                       "year_days": 365, "max_age_days": 10, "min_baseline": 5}
 
+    async def _query(self, where: str, stats: list[dict], group: bool) -> list[dict]:
+        import json
+        params = {"where": where, "outStatistics": json.dumps(stats), "f": "json"}
+        if group:
+            params["groupByFieldsForStatistics"] = "portname"
+        for attempt in range(RATE_TRIES):
+            resp = await self.ctx.client.get(API, params=params)
+            resp.raise_for_status()
+            body = resp.json()
+            err = body.get("error")
+            if isinstance(err, dict) and attempt < RATE_TRIES - 1:
+                # a 429 means the per-minute quota is spent, so one long wait clears it; other codes are brief gateway flakes
+                await asyncio.sleep(RATE_WAIT if err.get("code") == 429 else FLAKE_WAIT)
+                continue
+            break
+        if "error" in body:
+            code = body["error"].get("code") if isinstance(body["error"], dict) else None
+            raise SourceError("upstream is rate limiting requests, will retry" if code == 429
+                              else f"upstream refused the query (code {code})" if code else "upstream query error")
+        return [f["attributes"] for f in body.get("features", [])]
+
     async def fetch(self) -> Result:
         names = [str(n) for n in self.params["names"]]
         if not names:
             raise SourceError("no chokepoints named")
         recent_n, base_n, year_n = int(self.params["recent_days"]), int(self.params["baseline_days"]), int(self.params["year_days"])
         today = self.ctx.now().date()
-        start = today - timedelta(days=recent_n + max(base_n, year_n) + int(self.params["max_age_days"]) + 7)
         quoted = ",".join("'" + n.replace("'", "''") + "'" for n in names)
-        series: dict[str, dict[date, int]] = {}
-        offset = 0
-        for _ in range(20):  # the service caps rows per request, so page until it says there are no more
-            for attempt in range(RATE_TRIES):
-                resp = await self.ctx.client.get(API, params={
-                    "where": f"portname IN ({quoted}) AND date >= '{start.isoformat()}'",
-                    "outFields": "date,portname,n_total", "returnGeometry": "false",
-                    "orderByFields": "date,portname", "resultOffset": offset, "resultRecordCount": 1000, "f": "json",
-                })
-                resp.raise_for_status()
-                body = resp.json()
-                err = body.get("error")
-                if isinstance(err, dict) and err.get("code") == 429 and attempt < RATE_TRIES - 1:
-                    await asyncio.sleep(RATE_WAIT)  # the quota is per minute, so one wait usually clears it
-                    continue
-                break
-            if "error" in body:
-                code = body["error"].get("code") if isinstance(body["error"], dict) else None
-                raise SourceError("upstream is rate limiting requests, will retry" if code == 429
-                                  else f"upstream refused the query (code {code})" if code else "upstream query error")
-            features = body["features"]
-            for f in features:
-                a = f["attributes"]
-                if a.get("n_total") is None:
-                    continue
-                series.setdefault(a["portname"], {})[date.fromisoformat(a["date"])] = int(a["n_total"])
-            if not body.get("exceededTransferLimit"):
-                break
-            if not features:
-                raise SourceError("upstream paging stalled")
-            offset += len(features)
-        else:
-            raise SourceError("upstream result too large")
-        if not series:
+        # The service holds a row per chokepoint per day. Only averages are needed, so the service does the
+        # summing: a handful of small grouped queries instead of paging a year of daily rows.
+        stats = [{"statisticType": "max", "onStatisticField": "date", "outStatisticFieldName": "d"}]
+        newest_rows = await self._query(f"portname IN ({quoted}) AND date >= '{(today - timedelta(days=recent_n + max(base_n, year_n))).isoformat()}'", stats, group=True)
+        newest_days = [str(r["d"])[:10] for r in newest_rows if r.get("d")]
+        if not newest_days:
             raise SourceError("no data returned")
-
-        newest = max(max(s) for s in series.values())
+        newest = date.fromisoformat(max(newest_days))
         age = (today - newest).days
         if age > int(self.params["max_age_days"]):
             raise SourceError(f"upstream data is {age} days old")
-        recent_days = [newest - timedelta(days=i) for i in range(recent_n)]
-        base_days = [newest - timedelta(days=recent_n + i) for i in range(base_n)]
-        year_days = [newest - timedelta(days=recent_n + i) for i in range(year_n)]
+        windows = {
+            "recent": (newest - timedelta(days=recent_n - 1), newest),
+            "base": (newest - timedelta(days=recent_n + base_n - 1), newest - timedelta(days=recent_n)),
+            "year": (newest - timedelta(days=recent_n + year_n - 1), newest - timedelta(days=recent_n)),
+        }
+        sums = [{"statisticType": "sum", "onStatisticField": "n_total", "outStatisticFieldName": "s"},
+                {"statisticType": "count", "onStatisticField": "n_total", "outStatisticFieldName": "n"}]
+        got: dict[str, dict[str, tuple[int, int]]] = {}
+        for label, (lo, hi) in windows.items():
+            rows_ = await self._query(f"portname IN ({quoted}) AND date >= '{lo.isoformat()}' AND date <= '{hi.isoformat()}'", sums, group=True)
+            got[label] = {r["portname"]: (int(r.get("s") or 0), int(r.get("n") or 0)) for r in rows_}
+        if not any(got["recent"].values()):
+            raise SourceError("no data returned")
 
         floor, min_base = float(self.params["drop_pct"]), float(self.params["min_baseline"])
         rows = []
         for name in names:
-            s = series.get(name, {})
-            recent = [s[d] for d in recent_days if d in s]
-            base = [s[d] for d in base_days if d in s]
-            if len(recent) < recent_n - 2 or len(base) < base_n * 2 // 3:
+            (rs, rn), (bs, bn), (ys, yn) = (got[w].get(name, (0, 0)) for w in ("recent", "base", "year"))
+            if rn < recent_n - 2 or bn < base_n * 2 // 3:
                 rows.append({"name": name, "rated": False, "reason": "not enough data"})
                 continue
-            year = [s[d] for d in year_days if d in s]
-            r_avg, b_avg = fmean(recent), fmean(base)
-            y_avg = fmean(year) if len(year) >= year_n * 2 // 3 else None
+            r_avg, b_avg = rs / rn, bs / bn
+            y_avg = ys / yn if yn >= year_n * 2 // 3 else None
             if max(b_avg, y_avg or 0) < min_base:
                 rows.append({"name": name, "rated": False, "reason": "low traffic", "recent_avg": round(r_avg, 1), "baseline_avg": round(b_avg, 1)})
                 continue
