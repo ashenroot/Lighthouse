@@ -8,6 +8,7 @@ summary says how old it is.
 """
 from __future__ import annotations
 
+import asyncio
 from datetime import date, timedelta
 from statistics import fmean
 
@@ -15,6 +16,8 @@ from .base import Result, Source, SourceError
 
 API = "https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/services/Daily_Chokepoints_Data/FeatureServer/0/query"
 PAGE = "https://portwatch.imf.org/"
+RATE_WAIT = 65  # seconds; the service meters per minute and says "retry after 60"
+RATE_TRIES = 3
 DEFAULT_NAMES = ["Panama Canal", "Suez Canal", "Bab el-Mandeb Strait", "Strait of Hormuz", "Malacca Strait", "Taiwan Strait"]
 
 
@@ -42,13 +45,19 @@ class Chokepoints(Source):
         series: dict[str, dict[date, int]] = {}
         offset = 0
         for _ in range(20):  # the service caps rows per request, so page until it says there are no more
-            resp = await self.ctx.client.get(API, params={
-                "where": f"portname IN ({quoted}) AND date >= '{start.isoformat()}'",
-                "outFields": "date,portname,n_total", "returnGeometry": "false",
-                "orderByFields": "date,portname", "resultOffset": offset, "resultRecordCount": 1000, "f": "json",
-            })
-            resp.raise_for_status()
-            body = resp.json()
+            for attempt in range(RATE_TRIES):
+                resp = await self.ctx.client.get(API, params={
+                    "where": f"portname IN ({quoted}) AND date >= '{start.isoformat()}'",
+                    "outFields": "date,portname,n_total", "returnGeometry": "false",
+                    "orderByFields": "date,portname", "resultOffset": offset, "resultRecordCount": 1000, "f": "json",
+                })
+                resp.raise_for_status()
+                body = resp.json()
+                err = body.get("error")
+                if isinstance(err, dict) and err.get("code") == 429 and attempt < RATE_TRIES - 1:
+                    await asyncio.sleep(RATE_WAIT)  # the quota is per minute, so one wait usually clears it
+                    continue
+                break
             if "error" in body:
                 code = body["error"].get("code") if isinstance(body["error"], dict) else None
                 raise SourceError("upstream is rate limiting requests, will retry" if code == 429

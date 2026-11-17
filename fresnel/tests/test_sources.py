@@ -739,7 +739,8 @@ def test_failure_wait_retries_slow_sources_sooner():
     assert failure_wait(900, 1) == 1800
 
 
-async def test_chokepoints_names_an_upstream_rate_limit(config, clock):
+async def test_chokepoints_names_an_upstream_rate_limit(config, clock, monkeypatch):
+    monkeypatch.setattr("fresnel.sources.chokepoints.RATE_WAIT", 0)
     config.sources["chokepoints"] = SourceCfg(params={"names": ["Panama Canal"]})
     d = {"services9.arcgis.com": {"error": {"code": 429, "message": "Too many requests."}}}
     r = Relay(config, client=make_client(data=d), now=clock)
