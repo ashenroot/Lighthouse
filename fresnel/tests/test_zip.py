@@ -55,3 +55,19 @@ def test_without_a_zip_the_old_fields_are_still_required():
 def test_the_published_location_never_carries_the_zip():
     pub = Location(zip="64111").public()
     assert "zip" not in pub and "64111" not in str(pub)
+
+
+def test_the_zip_table_ships_with_the_repository():
+    """The table once sat in a folder the repository ignores (data/), so a fresh checkout had none and every ZIP lookup failed."""
+    import shutil
+    import subprocess
+    from pathlib import Path
+
+    table = Path(zipcodes.__file__).parent / "zipdata" / "zcta.tsv.gz"
+    assert table.is_file()
+    if shutil.which("git") and (Path(__file__).resolve().parents[2] / ".git").exists():
+        tracked = subprocess.run(["git", "ls-files", "--error-unmatch", str(table)], cwd=table.parent, capture_output=True)
+        ignored = subprocess.run(["git", "check-ignore", "-q", str(table)], cwd=table.parent)
+        assert ignored.returncode == 1, "the ZIP table is matched by .gitignore"
+        assert tracked.returncode == 0, "the ZIP table is not committed"
+    assert len(zipcodes._table()) > 33000

@@ -1,4 +1,4 @@
-"""ZIP Code to place, from a table bundled with Fresnel (data/zcta.tsv.gz, built by tools/build_zcta.py).
+"""ZIP Code to place, from a table bundled with Fresnel (zipdata/zcta.tsv.gz, built by tools/build_zcta.py).
 
 No network and no key: the Census Bureau's ZIP Code Tabulation Areas, each with an interior point, and the county
 covering most of its land. A ZIP can span counties and its point can sit miles from a given address, so anything
@@ -23,7 +23,7 @@ STATE_BY_FIPS = {
 @lru_cache(maxsize=1)
 def _table() -> dict[str, tuple[float, float, str, str]]:
     out: dict[str, tuple[float, float, str, str]] = {}
-    with resources.files("fresnel").joinpath("data/zcta.tsv.gz").open("rb") as raw, gzip.open(raw, "rt", encoding="utf-8") as f:
+    with resources.files("fresnel").joinpath("zipdata/zcta.tsv.gz").open("rb") as raw, gzip.open(raw, "rt", encoding="utf-8") as f:
         for line in f:
             z, lat, lon, fips, county = line.rstrip("\n").split("\t")
             out[z] = (float(lat), float(lon), fips, county)

@@ -39,7 +39,7 @@ Two optional request headers change the answer:
 "linked": [{"id": "eia_fuel_prices", "title": "Fuel prices (EIA)", "panel": "supply", "url": "https://www.eia.gov/petroleum/gasdiesel/"}]
 ```
 
-When a place cannot be shown, `place.ok` is `false` and the snapshot is the default one. `place.reason` is `unknown_zip`, `disabled`, `not_allowed`, `rate_limited` or `new_places_limit`; `message` says it in words and `retry_after` (seconds) is set when waiting helps. `loading` counts local sources still being fetched for the first time; ask again in a few seconds. Without the ZIP header the response has no `place` or `linked` fields, except `place.role` when a token was sent.
+When a place cannot be shown, `place.ok` is `false` and the snapshot is the default one. `place.reason` is `unknown_zip`, `disabled`, `not_allowed`, `rate_limited`, `new_places_limit` or `error` (something went wrong building the place; the relay logs it); `message` says it in words and `retry_after` (seconds) is set when waiting helps. `loading` counts local sources still being fetched for the first time; ask again in a few seconds. Without the ZIP header the response has no `place` or `linked` fields, except `place.role` when a token was sent.
 
 ## Source envelope
 

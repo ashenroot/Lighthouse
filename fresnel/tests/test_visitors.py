@@ -244,3 +244,15 @@ def test_sliding_window_and_cidr_helpers():
 def test_config_rejects_a_bad_allow_ips_entry(tmp_path):
     with pytest.raises(Exception, match="not an address or CIDR"):
         cfg(tmp_path, allow_ips=["not-an-ip"])
+
+
+@pytest.mark.asyncio
+async def test_a_failure_while_building_a_place_returns_the_default_snapshot(tmp_path, clock, monkeypatch):
+    config, relay, hits = build(tmp_path, clock)
+
+    def boom(_):
+        raise FileNotFoundError("zcta.tsv.gz")
+    monkeypatch.setattr("fresnel.places.zipcodes.lookup", boom)
+    snap = await view(relay)
+    assert snap["place"]["ok"] is False and snap["place"]["reason"] == "error"
+    assert snap["location"]["name"] == "Kansas City, MO" and "zcta" not in json.dumps(snap)

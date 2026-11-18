@@ -1,4 +1,4 @@
-"""Build fresnel/data/zcta.tsv.gz, the table behind `location: zip:`.
+"""Build fresnel/zipdata/zcta.tsv.gz, the table behind `location: zip:`.
 
 Two public-domain Census files go in:
   2024_Gaz_zcta_national.txt            ZCTA internal-point coordinates (Gazetteer)
@@ -13,7 +13,7 @@ import gzip
 import sys
 from pathlib import Path
 
-OUT = Path(__file__).resolve().parent.parent / "fresnel" / "data" / "zcta.tsv.gz"
+OUT = Path(__file__).resolve().parent.parent / "fresnel" / "zipdata" / "zcta.tsv.gz"
 
 
 def main(gaz: str, rel: str) -> None:

@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import asyncio
 import dataclasses
+import logging
 from collections import OrderedDict, deque
 
 from . import zipcodes
@@ -25,6 +26,8 @@ from .envelope import SourceState, build_envelope, panel_status
 from .limits import SlidingWindow, allowed
 from .sources import REGISTRY
 from .sources.base import Source
+
+log = logging.getLogger(__name__)
 
 RETRY_AFTER_FAILURE = 300  # seconds before a place's failed source is tried again
 BREAKER_AFTER = 5          # consecutive visitor-place failures of one source before it is paused
@@ -161,9 +164,19 @@ class Places:
         return base
 
     async def snapshot(self, raw_zip: str, admin: bool, address: str) -> dict:
+        """The snapshot for a place. Whatever goes wrong, the caller gets the default snapshot and a reason, never an error."""
         base = self.relay.snapshot()
         info: dict = {"role": "owner" if admin else "visitor"}
         base["place"] = info
+        try:
+            return await self._snapshot(base, info, raw_zip, admin, address)
+        except Exception:
+            log.exception("could not build the view for a place")  # the ZIP is not in the message
+            fresh = self.relay.snapshot()
+            fresh["place"] = {"role": info["role"], "ok": False, "reason": "error", "message": "Local data for that place is unavailable right now."}
+            return fresh
+
+    async def _snapshot(self, base: dict, info: dict, raw_zip: str, admin: bool, address: str) -> dict:
         found = zipcodes.lookup(raw_zip) if len(str(raw_zip)) <= 12 else None
         if not found:
             return self._refuse(base, info, "unknown_zip", "That is not a known US ZIP Code.")
