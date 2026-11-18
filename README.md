@@ -2,7 +2,7 @@
 
 A preparedness and threat-awareness board you run yourself. It watches public feeds for your location and shows what needs attention on one page, grouped into tabs: what is happening near you now (weather alerts, storms, floods, air quality, wildfires, airports), the infrastructure around you (power grid, fuel prices, shipping, cyber, space weather), health (hospital load, wastewater, drug shortages, recalls) and the wider world (internet outages, headlines). A daily written briefing from any source you like appears above the tabs as the **Keeper's Log**, with each section rated so you can see at a glance what matters.
 
-Nothing is hardcoded to one place. You give it coordinates and it works for any US location. It needs no accounts and no database, and most of it needs no API keys. A few sources use a free key you enter on the server; without one they wait quietly under a Setup line and everything else works (see [API keys](docs/keys.md)).
+Nothing is hardcoded to one place. You give it a ZIP code and it works for any US location. It needs no accounts and no database, and most of it needs no API keys. A few sources use a free key you enter on the server; without one they wait quietly under a Setup line and everything else works (see [API keys](docs/keys.md)).
 
 ![The board](docs/board.png)
 
@@ -42,7 +42,7 @@ curl -fsSLO https://raw.githubusercontent.com/ashenroot/Lighthouse/main/install.
 sudo bash install.sh
 ```
 
-The installer asks for your coordinates, an optional airport code and a contact email. It then creates a service account, installs Fresnel, writes a config file, starts a `fresnel` service, and prints the next steps. Your county and state are looked up from the coordinates, so there is no code to hunt for.
+The installer asks for your ZIP code, an optional airport code and a contact email. It then creates a service account, installs Fresnel, writes a config file, starts a `fresnel` service, and prints the next steps. Your county, state and coordinates come from the ZIP, so there is no code to hunt for.
 
 Check it, then open the board:
 

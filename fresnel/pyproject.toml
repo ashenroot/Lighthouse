@@ -26,7 +26,7 @@ fresnel = "fresnel.cli:main"
 include = ["fresnel*"]
 
 [tool.setuptools.package-data]
-fresnel = ["templates/*.txt"]
+fresnel = ["templates/*.txt", "data/*.gz"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

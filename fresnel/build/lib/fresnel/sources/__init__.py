@@ -1,0 +1,52 @@
+"""Source registry. Add a source: write the class, import it here, list it below."""
+from __future__ import annotations
+
+from .air_quality import AirQuality
+from .aviation_forecast import AviationForecast
+from .aviation_weather import AviationWeather
+from .base import Context, Result, Source
+from .cdc_wastewater import CdcWastewater
+from .chokepoints import Chokepoints
+from .cisa_kev import CisaKev
+from .doe_202c import Doe202c
+from .airnow_aqi import AirNowAqi
+from .cbp_border_waits import CbpBorderWaits
+from .cdc_hospital_load import CdcHospitalLoad
+from .fda_drug_shortages import FdaDrugShortages
+from .eia_fuel_prices import EiaFuelPrices
+from .eia_grid_demand import EiaGridDemand
+from .fdic_failures import FdicFailures
+from .federal_register import FederalRegister
+from .drought import Drought
+from .faa_airports import FaaAirports
+from .grid_operators import GridOperators
+from .nerc_alerts import NercAlerts
+from .nhc_storms import NhcStorms
+from .nifc_wildfires import NifcWildfires
+from .nws_alerts import NwsAlerts
+from .odin_outages import OdinOutages
+from .openfema import OpenFema
+from .recalls import CpscRecalls, FdaRecalls
+from .ioda_outages import IodaOutages
+from .river_stages import RiverStages
+from .rss_headlines import RssHeadlines
+from .spc_storm_reports import SpcStormReports
+from .swpc_kp import SwpcKp
+from .swpc_scales import SwpcScales
+from .usgs_gauges import UsgsGauges
+from .service_status import ServiceStatus
+from .usgs_quakes import UsgsQuakes
+from .weather_outlooks import SpcOutlook, WpcRainfallOutlook
+
+REGISTRY: dict[str, type[Source]] = {
+    cls.id: cls for cls in (
+        NwsAlerts, OpenFema, UsgsQuakes, FaaAirports, AviationWeather, CdcWastewater,
+        FdaRecalls, CpscRecalls, CisaKev, SwpcKp, SwpcScales, NhcStorms,
+        OdinOutages, Doe202c, NercAlerts, GridOperators, Chokepoints, AirQuality, NifcWildfires, FdicFailures, FederalRegister, SpcStormReports, RssHeadlines, IodaOutages, AviationForecast, SpcOutlook, EiaFuelPrices,
+    AirNowAqi, EiaGridDemand, CdcHospitalLoad, FdaDrugShortages, CbpBorderWaits, ServiceStatus,
+        # the Water panel reads in this order; river_stages comes before usgs_gauges, which leaves out gauges it already shows
+        WpcRainfallOutlook, RiverStages, UsgsGauges, Drought,
+    )
+}
+
+__all__ = ["REGISTRY", "Context", "Result", "Source"]

@@ -2,6 +2,9 @@
 # for you; copy settings from here as needed. Run `fresnel check` after editing.
 
 location:
+  # The short form: a quoted US ZIP Code fills in lat, lon, state, county_fips and name.
+  #   zip: "64111"
+  # Anything you set below overrides what the ZIP supplies.
   name: Kansas City, MO          # shown on the dashboard
   lat: 39.1                 # decimal degrees; used for NWS alerts
   lon: -94.6

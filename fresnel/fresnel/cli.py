@@ -64,7 +64,8 @@ def cmd_check(args) -> None:
     relay = Relay(config)
     loc = config.location
     print(f"config        {config.config_path}")
-    print(f"location      {loc.name} ({loc.state}, county {loc.county_fips}, about {loc.public_lat}, {loc.public_lon})")
+    print(f"location      {loc.name} ({loc.state}, county {loc.county_fips}, about {loc.public_lat}, {loc.public_lon})"
+          + (f" from ZIP {loc.zip}" if loc.zip else ""))
     print(f"listens on    {config.server.host}:{config.server.port}")
     print(f"data          {config.server.data_dir}")
     board = config.server.board_dir
@@ -254,10 +255,14 @@ def render_config(c: dict) -> str:
         "",
         "location:",
         f"  name: {_q(c['name'])}",
+    ] + ([
+        f"  zip: {_q(c['zip'])}   # state, county and coordinates come from this. Set lat, lon, state or county_fips here to override.",
+    ] if c.get("zip") else [
         f"  lat: {c['lat']}",
         f"  lon: {c['lon']}",
         f"  state: {_q(c['state'])}",
         f"  county_fips: {_q(c['county_fips'])}",
+    ]) + [
         "",
         "server:",
         "  host: 127.0.0.1",
@@ -296,18 +301,32 @@ def cmd_init(args) -> None:
 
     if interactive:
         print("Lighthouse setup. Press Enter to accept a [default].\n")
-    lat = number("Latitude (decimal degrees, e.g. 39.10)", args.lat)
-    lon = number("Longitude (e.g. -94.58)", args.lon)
-    found = lookup_county(lat, lon)
-    if found:
+    zipcode = args.zip
+    if zipcode is None and args.lat is None and args.lon is None:
+        zipcode = _ask("ZIP code (blank to enter coordinates instead)", interactive=interactive)
+    found = None
+    lat = lon = 0.0
+    if zipcode:
+        from . import zipcodes
+        found = zipcodes.lookup(zipcode)
+        if not found:
+            fail(f"{zipcode!r} is not a known US ZIP Code. Leave it blank to enter coordinates instead.")
+        zipcode = found["zip"]
+        lat, lon = found["lat"], found["lon"]
         print(f"Found: {found['county_name']}, {found['state']} (FIPS {found['county_fips']})")
     else:
-        print("Could not look up the county automatically.")
-        state = _ask("State abbreviation (e.g. MO)", interactive=interactive).upper()
-        fips = _ask("5-digit county FIPS (state + county, e.g. 29095)", interactive=interactive)
-        if not state or not fips:
-            fail("state and county FIPS are required when the lookup is unavailable")
-        found = {"county_fips": fips, "county_name": "", "state": state}
+        lat = number("Latitude (decimal degrees, e.g. 39.10)", args.lat)
+        lon = number("Longitude (e.g. -94.58)", args.lon)
+        found = lookup_county(lat, lon)
+        if found:
+            print(f"Found: {found['county_name']}, {found['state']} (FIPS {found['county_fips']})")
+        else:
+            print("Could not look up the county automatically.")
+            state = _ask("State abbreviation (e.g. MO)", interactive=interactive).upper()
+            fips = _ask("5-digit county FIPS (state + county, e.g. 29095)", interactive=interactive)
+            if not state or not fips:
+                fail("state and county FIPS are required when the lookup is unavailable")
+            found = {"county_fips": fips, "county_name": "", "state": state}
     default_name = args.name or (f"{found['county_name']}, {found['state']}" if found["county_name"] else found["state"])
     name = _ask("Name shown on the board", default_name, interactive)
     email = args.email if args.email is not None else _ask("Contact email for the User-Agent (NWS asks for one)", "", interactive)
@@ -321,7 +340,7 @@ def cmd_init(args) -> None:
     data_dir = args.data_dir or "./data"  # relative to the config file
 
     text = render_config({
-        "name": name, "lat": lat, "lon": lon, "state": found["state"], "county_fips": found["county_fips"],
+        "name": name, "zip": zipcode, "lat": lat, "lon": lon, "state": found["state"], "county_fips": found["county_fips"],
         "port": args.port, "data_dir": data_dir, "board_dir": board_dir, "public_url": public_url.rstrip("/"),
         "user_agent": f"lighthouse-fresnel ({email})" if email else "lighthouse-fresnel (set-your-contact@example.com)",
         "airports": [a.strip().upper() for a in airports.split(",") if a.strip()],
@@ -472,7 +491,7 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("init", parents=[common], help="create a config file by answering a few questions")
     p.add_argument("--out", help="where to write it (default: config.yaml in the app folder as root, else ./config.yaml)")
     p.add_argument("--force", action="store_true"); p.add_argument("--yes", action="store_true", help="never prompt; use flags and defaults")
-    p.add_argument("--lat", type=float); p.add_argument("--lon", type=float); p.add_argument("--name")
+    p.add_argument("--lat", type=float); p.add_argument("--lon", type=float); p.add_argument("--zip"); p.add_argument("--name")
     p.add_argument("--email"); p.add_argument("--airports"); p.add_argument("--public-url", dest="public_url")
     p.add_argument("--ntfy-topic", dest="ntfy_topic"); p.add_argument("--port", type=int, default=8787)
     p.add_argument("--data-dir", dest="data_dir"); p.add_argument("--no-board", action="store_true")

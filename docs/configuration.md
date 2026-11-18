@@ -31,6 +31,15 @@ A folder the current user cannot read is skipped. `fresnel check` prints which f
 
 The place to watch. This is the only required section.
 
+The shortest form is a US ZIP Code. State, county and coordinates are filled in from it, from a table bundled with Fresnel (no network, no key):
+
+```yaml
+location:
+  zip: "64111"
+```
+
+Or give everything yourself. Values set explicitly win over what the ZIP supplies, so you can use a ZIP and still pin exact coordinates for a rural address, or pick the other county when a ZIP spans two:
+
 ```yaml
 location:
   name: Kansas City, MO
@@ -42,7 +51,8 @@ location:
 
 | Key | Meaning |
 |---|---|
-| `name` | The label shown in the board's header. Free text. Default `Home`. |
+| `zip` | A US ZIP Code, in quotes (YAML reads an unquoted leading zero as a different number). Fills in `lat`, `lon`, `state`, `county_fips` and `name` for whatever you leave out. The point is the ZIP area's interior point, which can sit a few miles from a given address, and the county is the one covering most of the ZIP's land. Not every ZIP exists as an area: PO-box-only and unassigned ZIPs are refused with a message. The ZIP itself is never published. |
+| `name` | The label shown in the board's header. Free text. Default `Home`, or the county and state when `zip` is set. |
 | `lat`, `lon` | Decimal degrees. North and east are positive. Used to ask the weather and earthquake services about your point, and to find the nearest stream gauges. |
 | `state` | Two-letter state code. Used for state-level feeds (wastewater, recalls) and drought. |
 | `county_fips` | Five digits, state plus county, quoted so YAML keeps leading zeros. Used for FEMA declarations and the drought map. `fresnel init` looks it up; or find yours in the Census FIPS list. |

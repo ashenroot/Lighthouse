@@ -23,11 +23,32 @@ class Strict(BaseModel):
 
 
 class Location(Strict):
+    """Where the owner is. Give a ZIP Code and the rest is filled in, or give coordinates, state and county yourself.
+    Anything set explicitly wins over what the ZIP supplies, so a rural address can pin its own coordinates."""
+
     name: str = "Home"
+    zip: str | None = None
     lat: float = Field(ge=-90, le=90)
     lon: float = Field(ge=-180, le=180)
     state: str = Field(min_length=2, max_length=2)
     county_fips: str
+
+    @model_validator(mode="before")
+    @classmethod
+    def _from_zip(cls, data):
+        if not isinstance(data, dict) or data.get("zip") in (None, ""):
+            return data
+        from . import zipcodes
+        if isinstance(data["zip"], int) and data["zip"] < 10000:
+            raise ValueError("write the zip in quotes, such as zip: \"02134\" (YAML reads an unquoted leading zero as a different number)")
+        found = zipcodes.lookup(data["zip"])
+        if not found:
+            raise ValueError(f"zip {data['zip']!r} is not a known US ZIP Code; give lat, lon, state and county_fips instead")
+        out = dict(data)
+        out["zip"] = found["zip"]
+        for key in ("lat", "lon", "state", "county_fips", "name"):
+            out.setdefault(key, found[key])
+        return out
 
     @field_validator("county_fips")
     @classmethod

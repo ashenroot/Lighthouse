@@ -18,7 +18,7 @@ Download first and run second. The installer asks questions, and a pipe straight
 
 It asks for:
 
-- **Latitude and longitude** of the place to watch, in decimal degrees (for example `39.10` and `-94.58`, with west and south as negative numbers). The state and county are looked up from these through the US Census area service (`geo.fcc.gov`), which is the only time the installer sends your coordinates anywhere.
+- **A ZIP code** for the place to watch. State, county and coordinates come from a table bundled with Fresnel, so nothing is sent anywhere. Leave it blank to enter latitude and longitude instead (decimal degrees such as `39.10` and `-94.58`, west and south negative); the state and county are then looked up through the US Census area service (`geo.fcc.gov`), which is the only time the installer sends your coordinates anywhere.
 - **Airport codes** to watch for delays, such as `MCI`. Leave blank to skip.
 - **A contact email**, which goes into the User-Agent that identifies your relay to the weather service. NWS asks for this. It is only sent to that service.
 
@@ -37,7 +37,7 @@ Everything the relay needs, including your config, lives in that one folder. It 
 Give the answers up front and it never asks:
 
 ```
-sudo bash install.sh --init-args "--yes --lat 39.10 --lon -94.58 --airports MCI --email you@example.org"
+sudo bash install.sh --init-args "--yes --zip 64111 --airports MCI --email you@example.org"
 ```
 
 ### Installer options
