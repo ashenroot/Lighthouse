@@ -113,6 +113,7 @@ def _spc_time(text: str) -> datetime:
 
 class SpcOutlook(_Outlook):
     id = "spc_outlook"
+    place = "visitor"  # how a ZIP-code view treats this source: visitor | admin | link (see places.py)
     title = "Severe storm outlook (SPC)"
     panel = "local"
     page = "https://www.spc.noaa.gov/products/outlook/"
@@ -141,6 +142,7 @@ class SpcOutlook(_Outlook):
 
 class WpcRainfallOutlook(_Outlook):
     id = "wpc_rainfall_outlook"
+    place = "visitor"  # how a ZIP-code view treats this source: visitor | admin | link (see places.py)
     title = "Flash flood outlook (WPC)"
     panel = "water"
     page = "https://www.wpc.ncep.noaa.gov/qpf/excess_rain.shtml"

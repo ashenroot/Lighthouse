@@ -84,6 +84,12 @@ The board and the API are read-only and carry no secrets, but they do show your 
 
 If you add basic auth in front of everything, a job that pushes the brief will need an exception for `/v1/push/`, since it authenticates with its token instead.
 
+## Visitors' ZIP codes and the visitor's address
+
+Visitor limits (new places per hour, requests per minute, `allow_ips`) are per address, and the relay has to know the address. A reverse proxy on the same machine (nginx, Caddy) connects from `127.0.0.1`, so the relay reads the address from `X-Forwarded-For` (`visitors.client_ip_header`) when the request comes from this machine, and ignores that header from any other sender. Make sure the proxy sets it: nginx needs `proxy_set_header X-Forwarded-For $remote_addr;` (use `$remote_addr` and not `$proxy_add_x_forwarded_for`, which keeps whatever the client sent); Caddy's `reverse_proxy` sets it itself. With Cloudflare in front, set `client_ip_header: CF-Connecting-IP` and allow only Cloudflare's address ranges to reach your server, or the header can be forged.
+
+A response for a place varies by the `X-Lighthouse-Zip` and `Authorization` headers and is marked `private`, so a cache in front must not share it between visitors. The default snapshot has no such headers and can be cached for a few seconds, which is the cheapest protection against a sudden spike of visitors.
+
 ## Hosting the board somewhere else
 
 The board is a static folder and can be served from anywhere (another nginx site, GitHub Pages, S3, Netlify). Copy `board/`, then:

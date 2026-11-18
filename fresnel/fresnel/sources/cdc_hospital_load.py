@@ -27,6 +27,7 @@ def _num(row: dict, key: str) -> float | None:
 
 class CdcHospitalLoad(Source):
     id = "cdc_hospital_load"
+    place = "admin"  # how a ZIP-code view treats this source: visitor | admin | link (see places.py)
     title = "Hospital load (CDC)"
     panel = "health"
     page = PAGE

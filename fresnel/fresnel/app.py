@@ -15,6 +15,7 @@ from pydantic import ValidationError
 
 from . import __version__
 from .config import Config
+from .limits import client_address
 from .relay import Relay
 
 _DAY = re.compile(r"^\d{4}-\d{2}-\d{2}$")
@@ -32,6 +33,20 @@ def authorize(request: Request, slot: str, relay: Relay) -> str:
     if "*" not in matched["slots"] and slot not in matched["slots"]:
         raise HTTPException(403, "token is not allowed to write this slot")
     return matched["name"]
+
+
+def bearer(request: Request) -> str:
+    scheme, _, value = request.headers.get("authorization", "").partition(" ")
+    return value.strip() if scheme.lower() == "bearer" else ""
+
+
+def is_owner(request: Request, relay: Relay) -> bool | None:
+    """True for a valid token with the admin slot, False for a token that is not one, None when no token was sent."""
+    value = bearer(request)
+    if not value:
+        return None
+    matched = relay.tokens.verify(value)
+    return bool(matched and "admin" in matched["slots"])
 
 
 def _etag(body: dict) -> str:
@@ -67,7 +82,7 @@ def create_app(config: Config, relay: Relay | None = None, start_background: boo
             CORSMiddleware,
             allow_origins=config.server.cors_origins,
             allow_methods=["GET"],
-            allow_headers=["If-None-Match"],  # the board revalidates snapshots with its ETag
+            allow_headers=["If-None-Match", "Authorization", "X-Lighthouse-Zip"],  # the board revalidates with its ETag; an owner token and a ZIP can ride along
             expose_headers=["ETag"],
         )
 
@@ -92,11 +107,25 @@ def create_app(config: Config, relay: Relay | None = None, start_background: boo
             response.headers.setdefault("X-Content-Type-Options", "nosniff")
             return response
 
+    vcfg = config.visitors
+
     @app.get("/v1/snapshot")
-    def snapshot(request: Request):
-        body = relay.snapshot()
+    async def snapshot(request: Request):
+        owner = is_owner(request, relay)
+        raw_zip = request.headers.get("x-lighthouse-zip", "").strip()
+        headers = {"Cache-Control": "no-cache", "Vary": "X-Lighthouse-Zip, Authorization"}
+        if raw_zip:
+            address = client_address(request.client.host if request.client else None, request.headers.get(vcfg.client_ip_header), vcfg.client_ip_header)
+            body = await relay.places.snapshot(raw_zip, bool(owner), address)
+            headers["Cache-Control"] = "private, no-cache"
+            if owner is False:
+                body["place"]["token_rejected"] = True
+        else:
+            body = relay.snapshot()
+            if owner is not None:  # only a request that sent a token learns anything about roles
+                body["place"] = {"role": "owner" if owner else "visitor", **({} if owner else {"token_rejected": True})}
         etag = _etag(body)
-        headers = {"ETag": etag, "Cache-Control": "no-cache"}
+        headers["ETag"] = etag
         if request.headers.get("if-none-match") == etag:
             return Response(status_code=304, headers=headers)
         return JSONResponse(body, headers=headers)

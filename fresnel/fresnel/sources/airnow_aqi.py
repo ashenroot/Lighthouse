@@ -16,6 +16,7 @@ PAGE = "https://www.airnow.gov/"
 
 class AirNowAqi(Source):
     id = "airnow_aqi"
+    place = "admin"  # how a ZIP-code view treats this source: visitor | admin | link (see places.py)
     title = "Air quality (US AQI, monitors)"
     panel = "airfire"
     page = PAGE

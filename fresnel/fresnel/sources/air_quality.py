@@ -22,6 +22,7 @@ def category(aqi: float) -> str:
 
 class AirQuality(Source):
     id = "air_quality"
+    place = "visitor"  # how a ZIP-code view treats this source: visitor | admin | link (see places.py)
     title = "Air quality (US AQI, modeled)"
     panel = "airfire"
     page = PAGE

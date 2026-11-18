@@ -75,8 +75,32 @@
     try { localStorage.setItem(PREF_KEY, JSON.stringify(prefs)); } catch (_) { /* ignore */ }
   }
 
+  // ---------- place and owner key (this browser only) ----------
+  // A ZIP code makes the relay show local data for that place. An owner key, if you have one, lifts the visitor limits.
+  // Both live in this browser and are sent to the relay as headers, never in the address, so they stay out of server logs.
+  const ZIP_KEY = "lighthouse.zip", OWNER_KEY = "lighthouse.owner";
+  const mem = {};
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch (_) { return mem[k] || null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch (_) { mem[k] = v; } },
+    del(k) { try { localStorage.removeItem(k); } catch (_) { delete mem[k]; } },
+  };
+  const zipOf = (s) => { const m = /^\s*(\d{5})(?:-\d{4})?\s*$/.exec(String(s || "")); return m ? m[1] : null; };
+  // A link such as https://board.example/#key=abc or #zip=64111 is read once, saved, and removed from the address bar.
+  function readFragment() {
+    if (!location.hash || location.hash.length < 2) return false;
+    const q = new URLSearchParams(location.hash.slice(1));
+    let used = false;
+    if (/^[A-Za-z0-9_-]{8,128}$/.test(q.get("key") || "")) { store.set(OWNER_KEY, q.get("key")); used = true; }
+    if (zipOf(q.get("zip"))) { store.set(ZIP_KEY, zipOf(q.get("zip"))); used = true; }
+    if (used) { try { history.replaceState(null, "", location.pathname + location.search); } catch (_) { /* ignore */ } }
+    return used;
+  }
+  readFragment();
+  const place = { zip: zipOf(store.get(ZIP_KEY)), key: store.get(OWNER_KEY) };
+
   // ---------- state ----------
-  const state = { snap: null, etag: null, lastOk: null, error: null, nextAt: null, loading: false, visible: [], refocus: null, setupOpen: false, folds: {} };
+  const state = { snap: null, etag: null, lastOk: null, error: null, notice: null, fast: 0, nextAt: null, loading: false, visible: [], refocus: null, setupOpen: false, folds: {} };
   let dragId = null;
 
   // ---------- row renderers, one per source ----------
@@ -629,7 +653,10 @@
     } else if (!m.envs.length && m.push) {
       body = contextPanel(m.push[0]); foot = null;
     } else {
-      body = h("div", { class: "rows" + (m.id === "headlines" ? " multi" : "") }, m.envs.flatMap(sourceRows));
+      // For another place, sources that cannot be computed for it are replaced by a link to the publisher's own page.
+      const links = (snap.linked || []).filter((l) => l.panel === m.id && safeUrl(l.url || ""))
+        .map((l) => row(clip(l.title, 42), "Publisher's page ↗", { url: l.url }));
+      body = h("div", { class: "rows" + (m.id === "headlines" ? " multi" : "") }, m.envs.flatMap(sourceRows).concat(links));
       foot = sourceFooter(m.envs);
     }
     const mv = (dir, label) => h("button", { type: "button", class: "mv", "aria-label": `Move ${title} ${label}`, onclick: () => move(m.id, dir) }, dir < 0 ? "◀" : "▶");
@@ -759,14 +786,26 @@
   // ---------- rendering ----------
   function renderHeader() {
     const s = state.snap;
-    if (s) $("where").textContent = `${s.location.name} · county ${s.location.county_fips}`;
+    const p = s && s.place;
+    if (s) {
+      const shown = place.zip && p && p.ok;
+      $("where").textContent = `${s.location.name} · county ${s.location.county_fips}` + (shown ? ` · ZIP ${place.zip}` : "") +
+        (shown && p.loading ? ` · loading local data (${p.loading})` : "");
+      $("role").hidden = !(p && p.role === "owner");
+    }
+    $("zip-reset").hidden = !place.zip;
+    if (document.activeElement !== $("zip")) $("zip").value = place.zip || "";
     const now = new Date();
     $("when").textContent = now.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" }) +
       (state.lastOk ? ` · updated ${hhmm(state.lastOk)}` : "");
     const banner = $("banner");
+    banner.classList.remove("note");
     if (state.error) {
       banner.hidden = false;
       banner.textContent = `Cannot reach the relay (${state.error}). ` + (s ? "Showing the last data received, which may be out of date." : "Nothing to show yet.");
+    } else if (state.notice) {
+      banner.hidden = false; banner.classList.add("note");
+      banner.textContent = state.notice;
     } else banner.hidden = true;
   }
 
@@ -811,7 +850,10 @@
     if (state.loading) return;
     state.loading = true;
     try {
-      const headers = state.etag ? { "If-None-Match": state.etag } : {};
+      const headers = {};
+      if (state.etag) headers["If-None-Match"] = state.etag;
+      if (place.zip) headers["X-Lighthouse-Zip"] = place.zip;
+      if (place.key) headers["Authorization"] = "Bearer " + place.key;
       const r = await fetch(SNAPSHOT_URL, { headers, cache: "no-store" });
       if (r.status === 304) {
         state.lastOk = new Date(); state.error = null;
@@ -819,6 +861,7 @@
         state.snap = await r.json();
         state.etag = r.headers.get("ETag");
         state.lastOk = new Date(); state.error = null;
+        placeNotice(state.snap.place);
       } else throw new Error("HTTP " + r.status);
     } catch (err) {
       state.error = err && err.message ? err.message : "network error";
@@ -827,6 +870,23 @@
       schedule();
       render();
     }
+  }
+
+  // What the relay said about the place that was asked for. A ZIP that is not real is forgotten; a rejected owner key is dropped.
+  function placeNotice(p) {
+    state.notice = null;
+    if (!p) { state.fast = 0; return; }
+    if (p.token_rejected && place.key) {
+      store.del(OWNER_KEY); place.key = null; state.etag = null;
+      state.notice = "The owner key in this browser was not accepted by the relay, so it was removed.";
+    }
+    if (p.ok === false && place.zip) {
+      if (p.reason === "unknown_zip") { store.del(ZIP_KEY); place.zip = null; state.etag = null; }
+      const wait = p.retry_after ? ` Try again in about ${Math.max(1, Math.ceil(p.retry_after / 60))} min.` : "";
+      state.notice = `${p.message || "That place cannot be shown."}${wait}`;
+    }
+    if (p.ok && p.loading > 0 && state.fast < 5) { state.fast += 1; setTimeout(load, 8000); }  // local data is still arriving
+    else if (!(p.ok && p.loading > 0)) state.fast = 0;
   }
 
   function schedule() {
@@ -842,6 +902,23 @@
     } else next.textContent = "manual";
   }
 
+  function setZip(value) {
+    place.zip = value; state.etag = null; state.fast = 0; state.notice = null;
+    if (value) store.set(ZIP_KEY, value); else store.del(ZIP_KEY);
+    load();
+  }
+  $("zipform").addEventListener("submit", (ev) => {
+    ev.preventDefault();
+    const raw = $("zip").value.trim();
+    if (!raw) return setZip(null);
+    const z = zipOf(raw);
+    if (!z) { state.notice = "Enter a 5-digit US ZIP code."; renderHeader(); return; }
+    setZip(z);
+  });
+  $("zip-reset").addEventListener("click", () => setZip(null));
+  window.addEventListener("hashchange", () => {  // a link pasted into a tab that is already open
+    if (readFragment()) { place.zip = zipOf(store.get(ZIP_KEY)); place.key = store.get(OWNER_KEY); state.etag = null; state.fast = 0; load(); }
+  });
   $("refresh-now").addEventListener("click", load);
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden && state.nextAt && Date.now() >= state.nextAt) load();

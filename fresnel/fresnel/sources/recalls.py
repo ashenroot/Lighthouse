@@ -10,6 +10,7 @@ from .base import Result, Source
 
 class FdaRecalls(Source):
     id = "fda_recalls"
+    place = "admin"  # how a ZIP-code view treats this source: visitor | admin | link (see places.py)
     page = "https://www.fda.gov/safety/recalls-market-withdrawals-safety-alerts"  # shown as the link until the first fetch succeeds
     title = "FDA recalls reaching your state"
     panel = "recalls"

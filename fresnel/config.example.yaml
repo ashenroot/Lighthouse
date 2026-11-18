@@ -13,6 +13,21 @@ location:
   # Anything Fresnel publishes (links, snapshot) rounds coordinates to 0.1 degree,
   # so a public relay does not reveal a precise spot.
 
+# Visitors can type a US ZIP Code into the board to see keyless local data for that place. See docs/places.md.
+# The defaults are shown. `fresnel token add me --slots admin` makes an owner token with none of these limits.
+# visitors:
+#   enabled: true
+#   ttl_seconds: 3600
+#   ttl_by_source: {nws_alerts: 900}
+#   new_zips_per_hour: 3
+#   requests_per_minute: 60
+#   max_places: 200
+#   max_concurrent_fetches: 4
+#   max_fetches_per_minute: 60
+#   wait_seconds: 6
+#   allow_ips: []                    # only these addresses or CIDR ranges may look up places
+#   client_ip_header: X-Forwarded-For  # CF-Connecting-IP behind Cloudflare
+
 server:
   host: 127.0.0.1
   port: 8787

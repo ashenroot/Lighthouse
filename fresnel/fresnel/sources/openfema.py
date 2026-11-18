@@ -11,6 +11,7 @@ TYPES = {"DR": "Major disaster", "EM": "Emergency", "FM": "Fire management"}
 
 class OpenFema(Source):
     id = "openfema"
+    place = "visitor"  # how a ZIP-code view treats this source: visitor | admin | link (see places.py)
     page = "https://www.fema.gov/disaster/declarations"  # shown as the link until the first fetch succeeds
     title = "FEMA declarations, home county"
     panel = "local"

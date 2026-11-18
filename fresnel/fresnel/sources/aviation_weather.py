@@ -28,6 +28,7 @@ def ceiling_ft(clouds: list[dict]) -> int | None:
 
 class AviationWeather(Source):
     id = "aviation_weather"
+    place = "link"  # how a ZIP-code view treats this source: visitor | admin | link (see places.py)
     title = "Airport weather (METAR)"
     panel = "transport"
     page = PAGE

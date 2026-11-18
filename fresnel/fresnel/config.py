@@ -94,6 +94,34 @@ class Server(Strict):
     public_url: str | None = None  # where the outside world reaches this relay, used by `fresnel brief-step`
 
 
+class Visitors(Strict):
+    """What a visitor can do. A visitor is anyone without an owner token. Everyone sees the owner's place by default; a
+    visitor can send a ZIP Code to see keyless local data for that place instead, cached and rate limited."""
+
+    enabled: bool = True  # false: ignore visitors' ZIP codes (the owner token still works)
+    ttl_seconds: int = Field(default=3600, ge=300)  # how long a place's data is reused before it is fetched again
+    ttl_by_source: dict[str, int] = Field(default_factory=lambda: {"nws_alerts": 900})  # faster for sources where an hour is too long
+    new_zips_per_hour: int = Field(default=3, ge=1)  # per visitor address; places already cached do not count
+    requests_per_minute: int = Field(default=60, ge=1)  # per visitor address, for requests that name a ZIP
+    max_places: int = Field(default=200, ge=1)  # places kept in memory; the least recently used is dropped
+    max_concurrent_fetches: int = Field(default=4, ge=1)  # simultaneous upstream fetches for visitors' places
+    max_fetches_per_minute: int = Field(default=60, ge=1)  # upstream fetches for visitors' places, all places together
+    wait_seconds: float = Field(default=6.0, ge=0, le=30)  # how long a request waits for fresh local data before answering "loading"
+    allow_ips: list[str] = Field(default_factory=list)  # empty: any address. Otherwise only these addresses or ranges (CIDR) may use ZIPs
+    client_ip_header: str = "X-Forwarded-For"  # read only when the request comes from this machine (a reverse proxy)
+
+    @field_validator("allow_ips")
+    @classmethod
+    def _cidrs(cls, v: list[str]) -> list[str]:
+        import ipaddress
+        for item in v:
+            try:
+                ipaddress.ip_network(item, strict=False)
+            except ValueError:
+                raise ValueError(f"allow_ips entry {item!r} is not an address or CIDR range such as 203.0.113.0/24")
+        return v
+
+
 class Http(Strict):
     user_agent: str = "lighthouse-fresnel (set-your-contact@example.com)"
     timeout: float = 20.0
@@ -165,6 +193,7 @@ def _default_push() -> dict[str, PushSlot]:
 class Config(Strict):
     location: Location
     server: Server = Field(default_factory=Server)
+    visitors: Visitors = Field(default_factory=Visitors)
     http: Http = Field(default_factory=Http)
     sources: dict[str, SourceCfg] = Field(default_factory=dict)
     push: dict[str, PushSlot] = Field(default_factory=_default_push)

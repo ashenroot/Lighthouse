@@ -28,6 +28,7 @@ def _parse_time(text: str | None) -> datetime | None:
 
 class RiverStages(Source):
     id = "river_stages"
+    place = "admin"  # how a ZIP-code view treats this source: visitor | admin | link (see places.py)
     title = "River flood stages (NWS)"
     panel = "water"
     page = PAGE

@@ -12,6 +12,7 @@ LEVELS = ["Very Low", "Low", "Moderate", "High", "Very High"]
 
 class CdcWastewater(Source):
     id = "cdc_wastewater"
+    place = "admin"  # how a ZIP-code view treats this source: visitor | admin | link (see places.py)
     page = "https://www.cdc.gov/nwss/rv/COVID19-statetrend.html"  # shown as the link until the first fetch succeeds
     title = "Wastewater viral activity (CDC)"
     panel = "health"

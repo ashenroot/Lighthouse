@@ -163,7 +163,7 @@ def cmd_token(args) -> None:
     if args.action == "add":
         slots = [s.strip() for s in args.slots.split(",") if s.strip()]
         try:
-            token = store.add(args.name, slots, set(SLOT_MODELS))
+            token = store.add(args.name, slots, set(SLOT_MODELS) | {"admin"})
         except TokenError as exc:
             fail(str(exc))
         print(f"Created token {args.name!r} for slots {', '.join(slots)}. It is shown once; copy it now.", file=sys.stderr)
@@ -501,7 +501,7 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("token", help="manage push tokens")
     ts = p.add_subparsers(dest="action", required=True)
     a = ts.add_parser("add", parents=[common], help="create a token (shown once)")
-    a.add_argument("name"); a.add_argument("--slots", required=True, help="comma-separated slots, e.g. brief, or * for all")
+    a.add_argument("name"); a.add_argument("--slots", required=True, help="comma-separated: a push slot such as brief, * for every push slot, or admin for the owner's view of any ZIP code")
     ts.add_parser("list", parents=[common], help="list tokens")
     r = ts.add_parser("revoke", parents=[common], help="delete a token"); r.add_argument("name")
     p.set_defaults(func=cmd_token)

@@ -15,6 +15,7 @@ def _us(d) -> str:
 
 class Drought(Source):
     id = "drought"
+    place = "visitor"  # how a ZIP-code view treats this source: visitor | admin | link (see places.py)
     page = "https://droughtmonitor.unl.edu/"  # shown as the link until the first fetch succeeds
     title = "Drought, home county"
     panel = "water"

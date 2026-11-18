@@ -64,6 +64,7 @@ Servers with less than about 1 GB of memory should add swap before installing. S
 | [Install and update](docs/install.md) | Requirements, installer options, manual install, updating, uninstalling, small servers |
 | [Configuration](docs/configuration.md) | Every setting in `config.yaml`, with defaults and examples |
 | [Sources](docs/sources.md) | Each feed: what it shows, when it turns active, its settings, and what to do when a feed blocks your server |
+| [Places and visitors](docs/places.md) | Showing another US place by ZIP code, the owner and visitor roles, and the limits that keep load bounded |
 | [The daily brief](docs/brief.md) | The Keeper's Log: three ways to deliver it, the section and rating format, and a prompt for the job that writes it |
 | [Hosting](docs/hosting.md) | Reaching the board from outside: HTTPS, nginx, firewall, a dedicated port, hosting the board separately |
 | [API keys](docs/keys.md) | The few sources that need a free key: how to set one, where it is kept, what the board shows without one |

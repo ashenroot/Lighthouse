@@ -8,6 +8,7 @@ SEVERITY = {"Unknown": 0, "Minor": 1, "Moderate": 2, "Severe": 3, "Extreme": 4}
 
 class NwsAlerts(Source):
     id = "nws_alerts"
+    place = "visitor"  # how a ZIP-code view treats this source: visitor | admin | link (see places.py)
     page = "https://www.weather.gov/"  # shown as the link until the first fetch succeeds
     title = "NWS alerts, home point"
     panel = "local"

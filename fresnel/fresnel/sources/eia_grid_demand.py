@@ -26,6 +26,7 @@ def _hour(text: str) -> datetime:
 
 class EiaGridDemand(Source):
     id = "eia_grid_demand"
+    place = "link"  # how a ZIP-code view treats this source: visitor | admin | link (see places.py)
     title = "Grid demand (EIA)"
     panel = "grid"
     page = PAGE

@@ -56,6 +56,7 @@ def _hhz(ts: float) -> str:
 
 class AviationForecast(Source):
     id = "aviation_forecast"
+    place = "link"  # how a ZIP-code view treats this source: visitor | admin | link (see places.py)
     title = "Airport forecast (TAF)"
     panel = "transport"
     page = PAGE

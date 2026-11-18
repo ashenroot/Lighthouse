@@ -82,6 +82,40 @@ server:
 
 When `board_dir` is set, every response from the board carries a strict Content-Security-Policy (`default-src 'self'`), so the page can load nothing from other sites.
 
+## `visitors`
+
+Everyone who opens the board sees your place by default. A visitor can also type a US ZIP Code into the board to see keyless local data for that place. The board sends the ZIP to the relay in a request header, and the relay answers with your snapshot where the place-dependent sources are recomputed for that ZIP. See [Places and visitors](places.md) for how it works.
+
+```yaml
+visitors:
+  enabled: true            # false: ignore visitors' ZIP codes (an owner token still works)
+  ttl_seconds: 3600        # a place's data is reused this long before it is fetched again
+  ttl_by_source: {nws_alerts: 900}
+  new_zips_per_hour: 3     # per visitor address; places already cached do not count
+  requests_per_minute: 60  # per visitor address, for requests that name a ZIP
+  max_places: 200          # places kept in memory; the least recently used is dropped
+  max_concurrent_fetches: 4
+  max_fetches_per_minute: 60
+  wait_seconds: 6          # how long a request waits for fresh local data before it answers "loading"
+  allow_ips: []            # empty: any address. Otherwise only these addresses or CIDR ranges may look up places
+  client_ip_header: X-Forwarded-For
+```
+
+| Key | Meaning |
+|---|---|
+| `enabled` | Turns visitor ZIP lookups on or off. Off, a visitor's ZIP is ignored and the answer says so. The owner token is not affected. |
+| `ttl_seconds` | How long a place's data is reused, however many visitors ask. At least five minutes, and never less than the source's own interval. |
+| `ttl_by_source` | Shorter reuse for sources where an hour is too long. NWS alerts default to 15 minutes. |
+| `new_zips_per_hour` | How many places not yet cached one address may start per hour. A place someone else already asked for is free. |
+| `requests_per_minute` | Requests naming a ZIP per address per minute. |
+| `max_places` | Upper bound on places held in memory. |
+| `max_concurrent_fetches`, `max_fetches_per_minute` | Caps on upstream fetches for visitors' places, all places together. Your own sources are not counted and never wait for these. |
+| `wait_seconds` | A request waits this long for fresh data, then answers with what it has and a `loading` count; the board asks again a few seconds later. |
+| `allow_ips` | A whitelist of addresses or ranges (such as `203.0.113.0/24`). When set, only these may look up other places; everyone else keeps the default view. |
+| `client_ip_header` | Where the relay reads the visitor's address when the request comes through a reverse proxy on this machine. From any other sender the header is ignored, because it could be forged. Behind Cloudflare use `CF-Connecting-IP`. |
+
+The owner is a token with the `admin` slot (`fresnel token add me --slots admin`). It gets every placeable source at its normal interval with none of these limits.
+
 ## `http`
 
 ```yaml

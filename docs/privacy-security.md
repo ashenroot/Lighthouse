@@ -55,6 +55,10 @@ The board and API have no login. Anyone who can reach the address can read them,
 
 Exact coordinates are not hidden from you or the server's administrators: they are in `config.yaml`.
 
+When a visitor looks up a place, the keyless local feeds are asked about that place's point (the ZIP area's interior point), in the same way as for your own place; nothing else about the visitor is sent to them.
+
+A visitor's ZIP Code is sent in a request header, so it does not appear in the address or in the access logs of a reverse proxy. The relay keeps it only in memory, as the key of a cached place, and never writes it to disk, logs it, returns it, or publishes it; the snapshot carries the place's county and state. Visitor addresses are held in memory for the rate limits and forgotten after an hour. An owner token is a bearer secret: send it in a header, keep it out of URLs, and revoke it with `fresnel token revoke` if it leaks. See [Places and visitors](places.md).
+
 ## What is stored
 
 All under the data folder (`/opt/lighthouse/app/fresnel/data` by default):

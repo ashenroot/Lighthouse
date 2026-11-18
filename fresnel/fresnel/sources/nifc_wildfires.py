@@ -19,6 +19,7 @@ FIELDS = "IncidentName,POOState,POOCounty,IncidentSize,PercentContained,Modified
 
 class NifcWildfires(Source):
     id = "nifc_wildfires"
+    place = "visitor"  # how a ZIP-code view treats this source: visitor | admin | link (see places.py)
     title = "Wildfires (NIFC)"
     panel = "airfire"
     page = PAGE

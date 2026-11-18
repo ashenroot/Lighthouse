@@ -37,6 +37,8 @@ Edit the copy you deploy, so `git pull` on a checkout never conflicts with your 
 - Drag a panel by its header, or use the arrows, to rearrange it within the tab. Left and right arrow keys move between tabs.
 - The refresh interval (off, 1m to 1h) sits in the header. Refresh uses `If-None-Match`, so an unchanged snapshot costs a 304.
 - Interval, hidden panels and order are stored in this browser's localStorage (`lighthouse.prefs`).
+- The ZIP box in the header shows local data for another US place. The ZIP is saved in this browser (`lighthouse.zip`) and sent to the relay in a header; Reset returns to the relay's own place. Sources that cannot be shown for another place appear as a link to the publisher's page. If the relay is limiting lookups, the board says so and shows the default place.
+- An owner link such as `https://board.example/#key=TOKEN` saves the owner token in this browser (`lighthouse.owner`) and removes it from the address bar. `#zip=64111` works the same way. The header shows "Owner view" while a valid token is in use.
 - Every row links to its source in a new tab. Each panel footer shows per-source freshness.
 - If the relay is unreachable, the board keeps the last data and shows a banner.
 

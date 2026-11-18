@@ -25,6 +25,22 @@ Everything the board needs, in one document.
 
 The response has an `ETag`. Send it back as `If-None-Match` and an unchanged snapshot answers `304` with no body. The board does this on every refresh.
 
+### Another place, and the owner
+
+Two optional request headers change the answer:
+
+| Header | Effect |
+|---|---|
+| `X-Lighthouse-Zip: 64111` | Recomputes the place-dependent sources for that US ZIP Code. `location` becomes that place's county and state (the ZIP itself is never echoed), `place` describes the result, and `linked` lists sources that cannot be shown for it, each with the publisher's page. Responses carry `Vary` on both headers and `Cache-Control: private`. |
+| `Authorization: Bearer TOKEN` | A token with the `admin` slot is the owner: every placeable source, no visitor limits. A token that is not one is treated as a visitor, with `place.token_rejected: true`. |
+
+```json
+"place": {"role": "visitor", "ok": true, "name": "Jackson County, MO", "state": "MO", "ttl_seconds": 3600, "loading": 0},
+"linked": [{"id": "eia_fuel_prices", "title": "Fuel prices (EIA)", "panel": "supply", "url": "https://www.eia.gov/petroleum/gasdiesel/"}]
+```
+
+When a place cannot be shown, `place.ok` is `false` and the snapshot is the default one. `place.reason` is `unknown_zip`, `disabled`, `not_allowed`, `rate_limited` or `new_places_limit`; `message` says it in words and `retry_after` (seconds) is set when waiting helps. `loading` counts local sources still being fetched for the first time; ask again in a few seconds. Without the ZIP header the response has no `place` or `linked` fields, except `place.role` when a token was sent.
+
 ## Source envelope
 
 `GET /v1/sources/{id}` (or an entry of `sources`) returns one source:
@@ -106,4 +122,4 @@ If the relay is not serving the board, answers with a small JSON description. If
 
 ## Cross-origin access
 
-Only `GET` is allowed from other origins, and only those in `server.cors_origins`. `If-None-Match` is permitted and `ETag` is exposed so a separately hosted board can revalidate.
+Only `GET` is allowed from other origins, and only those in `server.cors_origins`. `If-None-Match`, `Authorization` and `X-Lighthouse-Zip` are permitted and `ETag` is exposed so a separately hosted board can revalidate and send a place or an owner token.

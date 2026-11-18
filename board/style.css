@@ -137,3 +137,11 @@ details.fold.t-active>summary .v{color:var(--warn)}
 .setup-t{color:var(--strong);flex:0 1 240px}
 .setup-row code{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:12px;color:var(--accent);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:2px 8px}
 
+
+.zip{display:flex;align-items:center;gap:6px;padding:3px 6px 3px 12px}
+.zip input{font:inherit;font-size:12px;width:92px;padding:4px 7px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--strong)}
+.zip input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.mini{font:inherit;font-size:12px;padding:4px 9px;border:1px solid var(--line);border-radius:6px;background:none;color:var(--accent);cursor:pointer}
+.mini:hover{border-color:var(--accent)}
+.owner{border-color:var(--info-line);background:var(--info-bg);color:var(--info)}
+.banner.note{border-color:var(--info-line);background:var(--info-bg);color:var(--info)}

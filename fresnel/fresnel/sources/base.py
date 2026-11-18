@@ -53,6 +53,10 @@ class Source:
     inherits: dict[str, str] = {}  # param -> other source id whose value of it is used when this one is empty
     supersedes: tuple[str, ...] = ()  # ids of keyless sources this one replaces while it has its key
     key: str | None = None  # name of the API key this source needs (see fresnel/keys.py), if any
+    # How a view for another place (a visitor's ZIP code) treats this source. None: not tied to a place, shown as is.
+    # "visitor": fetched for the visitor's place. "admin": fetched for the owner's lookups only; visitors get a link.
+    # "link": cannot be derived from a ZIP (it depends on settings of the owner's), so every place view gets a link.
+    place: str | None = None
 
     def __init__(self, cfg: SourceCfg, ctx: Context):
         self.ctx = ctx

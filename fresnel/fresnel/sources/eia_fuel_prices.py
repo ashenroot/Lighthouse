@@ -31,6 +31,7 @@ def _pct(now: float, then: float) -> float:
 
 class EiaFuelPrices(Source):
     id = "eia_fuel_prices"
+    place = "admin"  # how a ZIP-code view treats this source: visitor | admin | link (see places.py)
     title = "Fuel prices (EIA)"
     panel = "supply"
     page = PAGE

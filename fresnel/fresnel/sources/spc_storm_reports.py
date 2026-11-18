@@ -30,6 +30,7 @@ def _report_time(hhmm: str, now: datetime) -> datetime:
 
 class SpcStormReports(Source):
     id = "spc_storm_reports"
+    place = "admin"  # how a ZIP-code view treats this source: visitor | admin | link (see places.py)
     title = "Storm reports (SPC)"
     panel = "local"
     page = PAGE

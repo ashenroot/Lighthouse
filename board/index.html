@@ -19,6 +19,13 @@
     </div>
     <div class="controls mono">
       <span class="chip" id="where">Loading…</span>
+      <span class="chip owner" id="role" hidden>Owner view</span>
+      <form class="chip zip" id="zipform" autocomplete="off">
+        <label class="muted" for="zip">ZIP</label>
+        <input id="zip" inputmode="numeric" maxlength="10" placeholder="e.g. 64111" aria-label="ZIP code to show local data for">
+        <button type="submit" class="mini">Show</button>
+        <button type="button" class="mini" id="zip-reset" hidden>Reset</button>
+      </form>
       <span class="chip" id="when"></span>
       <div class="chip seg" role="group" aria-label="Refresh interval">
         <span class="muted">Refresh</span>

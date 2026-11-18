@@ -8,6 +8,7 @@ PAGE = "https://earthquake.usgs.gov/earthquakes/map/"
 
 class UsgsQuakes(Source):
     id = "usgs_quakes"
+    place = "visitor"  # how a ZIP-code view treats this source: visitor | admin | link (see places.py)
     page = "https://earthquake.usgs.gov/earthquakes/map/"  # shown as the link until the first fetch succeeds
     title = "Earthquakes near home (USGS)"
     panel = "local"

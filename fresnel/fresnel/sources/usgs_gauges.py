@@ -9,6 +9,7 @@ API = "https://waterservices.usgs.gov/nwis/iv/"
 
 class UsgsGauges(Source):
     id = "usgs_gauges"
+    place = "admin"  # how a ZIP-code view treats this source: visitor | admin | link (see places.py)
     page = "https://waterdata.usgs.gov/"  # shown as the link until the first fetch succeeds
     title = "Stream gauges (USGS)"
     panel = "water"

@@ -15,6 +15,7 @@ NOTE = "Utilities report to ODIN voluntarily. Counts are a floor, and no record 
 
 class OdinOutages(Source):
     id = "odin_outages"
+    place = "admin"  # how a ZIP-code view treats this source: visitor | admin | link (see places.py)
     title = "Power outages (ODIN)"
     panel = "grid"
     page = PAGE

@@ -29,6 +29,7 @@ from .push import validate_payload
 from .keys import KEYS, KeyFormatError, load_key
 from .sources import REGISTRY, Context
 from .sources.base import KeyRejected, SourceError
+from .places import Places
 from .store import Store
 from .tokens import TokenStore
 
@@ -118,6 +119,7 @@ class Relay:
             self.states[sid] = SourceState.from_json(raw) if raw else SourceState()
 
         self.pushed: dict[str, dict | None] = {slot: self.store.load_push(slot) for slot in config.push}
+        self.places = Places(self)
         self.foghorn = Foghorn(self)
         self.mailbox = MailboxPuller(self)
         self.ntfy_brief = NtfyBrief(self)
@@ -196,6 +198,7 @@ class Relay:
             self._tasks.append(asyncio.create_task(self._loop(sid, index)))
 
     async def stop(self) -> None:
+        await self.places.stop()
         await self.foghorn.stop()
         await self.mailbox.stop()
         await self.ntfy_brief.stop()
@@ -271,15 +274,20 @@ class Relay:
                 out.append({"id": sid, "title": env["title"], "panel": env["panel"], **env["needs_key"]})
         return out
 
-    def snapshot(self) -> dict:
-        now = self.now()
-        sources = {sid: self.envelope(sid) for sid in self.sources if not self.skipped(sid)}
+    @staticmethod
+    def build_panels(sources: dict[str, dict]) -> dict[str, dict]:
         panels: dict[str, dict] = {}
         for sid, env in sources.items():
             panel = panels.setdefault(env["panel"], {"status": "nominal", "sources": []})
             panel["sources"].append(sid)
         for name, panel in panels.items():
             panel["status"] = panel_status([sources[s]["status"] for s in panel["sources"]])
+        return panels
+
+    def snapshot(self) -> dict:
+        now = self.now()
+        sources = {sid: self.envelope(sid) for sid in self.sources if not self.skipped(sid)}
+        panels = self.build_panels(sources)
         return {
             "schema": 1,
             "generated_at": iso(now),
@@ -328,6 +336,7 @@ class Relay:
             "sources": rows,
             "push": push,
             "push_enabled": self.tokens.any(),
+            "visitors": self.places.health(),
             **({"mailbox": mb} if (mb := self.mailbox.health()) else {}),
             **({"brief_ntfy": nb} if (nb := self.ntfy_brief.health()) else {}),
         }
